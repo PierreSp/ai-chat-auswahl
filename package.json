@@ -1,11 +1,17 @@
 {
   "name": "ai-chat-auswahl",
-  "version": "1.2.10",
+  "version": "1.3.0",
   "private": true,
   "scripts": {
-    "test": "node tests/browser.test.cjs"
+    "test": "node tests/browser.test.cjs",
+    "package": "python3 scripts/package.py"
   },
   "devDependencies": {
     "playwright": "1.62.1"
+  },
+  "license": "GPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PierreSp/ai-chat-auswahl.git"
   }
 }

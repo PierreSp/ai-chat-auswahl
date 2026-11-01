@@ -7,6 +7,7 @@ coverage/
 
 # Distribution archives and local preview screenshots
 *.zip
+/dist/
 /auswahl.png
 /schmal-auswahl.png
 /dunkel.png

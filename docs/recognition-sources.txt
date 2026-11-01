@@ -1,0 +1,16 @@
+QUELLEN UND ERKENNUNGSBASIS
+Offizielle Löschabläufe:
+https://help.openai.com/de-de/articles/8809935-deleting-and-archiving-chats-in-chatgpt
+https://support.claude.com/en/articles/8230524-delete-or-rename-a-conversation
+https://support.google.com/gemini/answer/13666746?hl=en&co=GENIE.Platform%3DDesktop
+Installation:
+https://developer.chrome.com/docs/extensions/get-started/tutorial/hello-world
+Öffentliche Hinweise auf Gemini-Selektorvarianten (kein Live-Nachweis):
+https://github.com/learnerLj/ai-chat-bulk-manager/blob/master/spec.md
+https://greasyfork.org/en/scripts/556503-gemini-bulk-chat-deleter/code
+Zusätzlich wurde Geminis abgemeldete Navigation mit bard-sidenav live angesehen.
+Zusätzliche Quellen für Version 1.2.1 (keine Live-Verifikation am Benutzerkonto):
+https://github.com/AkumaNomu/ChatGPT-Web-Utils/blob/main/chatgpt-mass-delete/content.js
+https://greasyfork.org/en/scripts/544960-gemini-conversation-folders/code
+https://greasyfork.org/en/scripts/592510-gemini-imgen-enhancer/code
+Die Implementierung ist eigenständig; Drittanbieter-Skripte werden nicht geladen.

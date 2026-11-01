@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Pierre Springer
 document.getElementById('open').addEventListener('click', async () => {
   try {
     const [tab] = await chrome.tabs.query({active:true,currentWindow:true});

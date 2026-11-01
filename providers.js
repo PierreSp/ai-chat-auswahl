@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Pierre Springer
 /* Host-specific, conservative DOM adapters. No private service APIs. */
 (() => {
   'use strict';

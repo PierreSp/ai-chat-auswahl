@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Pierre Springer
 /* Runs only in the extension's isolated content-script world. No network calls. */
 (() => {
   'use strict';
@@ -43,7 +45,7 @@
     return [button, controller].some(node => node.disabled || node.hasAttribute('disabled') || node.getAttribute('aria-disabled') === 'true');
   }
 
-  function menuFor(anchor, root, trace = null) {
+  function menuFor(anchor, root) {
     const expectedId = chatId(anchor);
     const taskRow = Provider.isTask(expectedId) ? anchor.closest('[data-app-action-sidebar-thread-row]') : null;
     let row = anchor;
@@ -56,7 +58,6 @@
       // Hover-only controls can have display:none/visibility:hidden. The row
       // must be visible, but its unique native menu need not be painted yet.
       const buttons = [...row.querySelectorAll(menuButtons)];
-      trace?.push({row,ids:ids.size,buttons});
       if (ids.size > 1) return null;
       if (buttons.length === 1) {
         const triggerId = buttons[0].getAttribute('data-conversation-options-trigger');
@@ -72,14 +73,6 @@
   }
 
   function roots() { return [...document.querySelectorAll(sidebars)].filter(Provider.isRoot); }
-  function inspect(anchor) {
-    const main = anchor.closest('main, [role="main"]');
-    return {visibility:visibilityIssue(anchor),titleRecognized:Boolean(titleOf(anchor)),
-      roots:[...document.querySelectorAll(sidebars)].filter(root=>root.contains(anchor)).slice(0,8).map(root=>{
-        const trace=[],menu=menuFor(anchor,root,trace);
-        return {root,accepted:Provider.isRoot(root),visibility:visibilityIssue(root),contentExcluded:Boolean(main&&root.contains(main)),menu,trace};
-      })};
-  }
   function discover() {
     const found = new Map();
     for (const root of roots()) {
@@ -451,5 +444,5 @@
     }
   }
 
-  globalThis.ChatCleanerCore = Object.freeze({discover, inspect, loadMore, preflight, deleteChat, createBatchGuard, normal, provider: Provider});
+  globalThis.ChatCleanerCore = Object.freeze({discover, loadMore, preflight, deleteChat, createBatchGuard, normal, provider: Provider});
 })();

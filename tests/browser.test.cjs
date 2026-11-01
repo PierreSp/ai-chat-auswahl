@@ -152,11 +152,6 @@ test('Codex: a normal-chat link cannot bypass the task ID of its native remote r
 });
 async function confirm(p){await p.getByRole('button',{name:'Auswahl löschen',exact:true}).click();await p.getByRole('checkbox',{name:'Ich habe die Auswahl geprüft.'}).check();await p.getByRole('button',{name:/^\d+ Chats? endgültig löschen$/}).click();}
 async function status(p,re){await p.getByRole('status').filter({hasText:re}).waitFor({timeout:15000});}
-async function diagnosticReport(p){
- const download=p.waitForEvent('download');await p.getByText('Fehlende Checkboxen untersuchen',{exact:true}).click();
- await p.getByRole('button',{name:'Diagnose speichern',exact:true}).click();
- return JSON.parse(fs.readFileSync(await (await download).path(),'utf8'));
-}
 
 async function untitledChatGPT(p,settings={}) {
  await reportedChatGPT(p);
@@ -217,19 +212,6 @@ for(const display of ['inline','contents'])test(`Gemini report: visible history 
  assert.equal(await box(p,'Alte Notizen').isChecked(),true);assert.deepEqual(await p.evaluate(()=>window.deleted),[]);
 });
 
-test('diagnostics: identifies the exact clipping ancestor and missing native menu without actions',async t=>{
- const p=await pageFor(t,'https://gemini.google.com/app');await reportedGemini(p);
- await p.evaluate(()=>{
-  const row=document.querySelector('[data-id$="0001"]'),clip=document.createElement('div');
-  clip.style.cssText='height:0;overflow:hidden';row.replaceWith(clip);clip.append(row);
-  document.querySelector('[data-id$="0002"] gem-icon-button').remove();
-  window.providerClicks=0;document.querySelector('bard-sidenav').addEventListener('click',()=>window.providerClicks++);
- });
- const report=await diagnosticReport(p);
- assert.ok(report.samples.some(s=>s.inspection?.visibility.reason==='clipped-ancestor' && s.inspection.visibility.blocker.layout.clientHeight===0));
- assert.ok(report.samples.some(s=>s.identityRecognized && s.inspection?.visibility.reason===null && s.inspection.roots.some(r=>r.visible && !r.menuFound)));
- assert.equal(await p.evaluate(()=>window.providerClicks),0);assert.deepEqual(await p.evaluate(()=>window.deleted),[]);
-});
 for(const cancelPointer of [true,false])test(`menu activation: pointerdown-triggered ChatGPT menu opens once (cancel=${cancelPointer})`,async t=>{
  const p=await pageFor(t);await reportedChatGPT(p);
  await p.evaluate(cancelPointer=>{
@@ -246,41 +228,6 @@ test('menu activation: cancelled pointerdown does not suppress a click-driven Ch
  assert.deepEqual(await p.evaluate(()=>window.deleted),['00000000-0000-4000-8000-000000000002']);
 });
 
-for(const [name,url] of [['ChatGPT','https://chatgpt.com/'],['Gemini','https://gemini.google.com/app']])test(`diagnostics: ${name} exports local structure without chat data or actions`,async t=>{
- const p=await pageFor(t,url);
- await p.evaluate(()=>{
-  const row=document.querySelector('#rows>.row');row.querySelector('span').textContent='PRIVATE_CHAT_TITLE_4711';
-  row.setAttribute('aria-label','PRIVATE_ACCOUNT_4711');row.setAttribute('data-conversation-id','deadbeefdeadbeef');
-  row.setAttribute('data-chat-deadbeefdeadbeef','');
-  const wrapper=document.createElement('private-row-4711');wrapper.style.display='block';row.replaceWith(wrapper);wrapper.append(row);
-  row.setAttribute('jslog','123;BardVeMetadataKey:'+btoa(JSON.stringify([['c_deadbeefdeadbeef','PRIVATE_METADATA_4711']])));
-  const a=row.querySelector('a');a.href='/app/deadbeefdeadbeef?token=PRIVATE_TOKEN_4711';
-  document.querySelector('main').textContent='PRIVATE_MESSAGE_4711';
-  window.providerClicks=0;document.querySelector('nav').addEventListener('click',()=>window.providerClicks++);
- });
- const downloadPromise=p.waitForEvent('download');await p.getByText('Fehlende Checkboxen untersuchen',{exact:true}).click();await p.getByRole('button',{name:'Diagnose speichern',exact:true}).click();
- const download=await downloadPromise;assert.equal(download.suggestedFilename(),`ai-chat-diagnose-${name.toLowerCase()}.json`);
- const reportText=fs.readFileSync(await download.path(),'utf8'),report=JSON.parse(reportText);
- assert.equal(report.provider,name);assert.equal(report.schema,1);assert.ok(report.roots.length);assert.ok(report.samples.length);
- assert.doesNotMatch(reportText,/PRIVATE_|private-row-4711|deadbeef|00000000-0000-4000|800000000000/);
- assert.deepEqual(await p.evaluate(()=>window.deleted),[]);assert.equal(await p.evaluate(()=>window.providerClicks),0);
-});
-test('diagnostics: works with zero detected chats and reports selector stages',async t=>{
- const p=await pageFor(t);await p.evaluate(()=>{document.querySelector('nav').removeAttribute('id');document.querySelector('nav').setAttribute('aria-label','Unknown navigation');});
- await p.getByRole('checkbox',{name:/Chat auswählen:/}).first().waitFor({state:'detached'});
- const downloadPromise=p.waitForEvent('download');await p.getByText('Fehlende Checkboxen untersuchen',{exact:true}).click();await p.getByRole('button',{name:'Diagnose speichern',exact:true}).click();
- const report=JSON.parse(fs.readFileSync(await (await downloadPromise).path(),'utf8'));
- assert.equal(report.detectedChats,0);assert.ok(report.roots.some(root=>root.node.tag==='nav'&&root.providerRoot===false));assert.ok(report.samples.some(sample=>sample.identityRecognized===true));
- assert.deepEqual(await p.evaluate(()=>window.deleted),[]);
-});
-test('diagnostics: reports a sidebar rejected because it is nested inside main',async t=>{
- const p=await pageFor(t);await p.evaluate(()=>document.querySelector('main').append(document.querySelector('nav')));
- await p.getByRole('checkbox',{name:/Chat auswählen:/}).first().waitFor({state:'detached'});
- await p.getByText('Fehlende Checkboxen untersuchen',{exact:true}).click();
- const downloadPromise=p.waitForEvent('download');await p.getByRole('button',{name:'Diagnose speichern',exact:true}).click();
- const report=JSON.parse(fs.readFileSync(await (await downloadPromise).path(),'utf8'));
- assert.equal(report.detectedChats,0);assert.ok(report.roots.some(root=>root.node.tag==='nav'&&root.insideMain));assert.ok(report.samples.length);
-});
 
 test('report regression: ChatGPT aside navigation and deeply wrapped links get checkboxes',async t=>{
  const p=await pageFor(t);await reportedChatGPT(p);

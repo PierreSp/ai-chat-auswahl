@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Pierre Springer
 (() => {
   'use strict';
   if (document.querySelector('[data-cc-app]')) return;
@@ -52,16 +54,14 @@
       el('div',{id:'running',hidden:true},[
         el('progress',{id:'bar',max:'1',value:'0','aria-label':'Löschfortschritt'}),
         el('p',{id:'progress',class:'progress'}),button('stop','Anhalten','full'),
-        el('p',{id:'busy-note',class:'muted',text:'Anhalten verhindert weitere Löschungen. Eine bereits bestätigte Löschung kann noch fertig werden.'})]),
-      el('p',{id:'status',role:'status','aria-live':'polite',text:'Bereit. Du prüfst die Auswahl vor dem Löschen.'}),
-      el('details',{id:'diagnostics'},[
-        el('summary',{text:'Fehlende Checkboxen untersuchen'}),
-        el('p',{class:'muted',text:'Speichert einen lokalen technischen Bericht ohne Chattexte, Titel oder Chat-IDs. Du entscheidest, ob du die Datei weitergibst.'}),
-        button('save-diagnostics','Diagnose speichern','full')])]),
+        el('p',{id:'busy-note',class:'muted',text:'Diesen Tab geöffnet lassen. Nicht neu laden und nicht zu einer anderen Seite wechseln, bis der Vorgang beendet ist. Anhalten verhindert weitere Löschungen. Eine bereits bestätigte Löschung kann noch fertig werden.'})]),
+      el('p',{id:'status',role:'status','aria-live':'polite',text:'Bereit. Du prüfst die Auswahl vor dem Löschen.'})]),
     el('dialog',{id:'review','aria-labelledby':'review-title','aria-describedby':'review-warning'},[
       el('h2',{id:'review-title',text:'Endgültig löschen?'}),
       el('p',{id:'review-warning',text:`Diese Chats werden aus deinem ${provider.name}-Konto gelöscht. Das kann nicht rückgängig gemacht werden.`}),
-      el('p',{id:'provider-note',text:note}),el('p',{id:'review-count'}),el('ol',{id:'review-list'}),
+      el('p',{id:'provider-note',text:note}),
+      el('p',{text:'Während des Löschens diesen Tab geöffnet lassen. Nicht neu laden und nicht zu einer anderen Seite wechseln, bis der Vorgang beendet ist.'}),
+      el('p',{id:'review-count'}),el('ol',{id:'review-list'}),
       el('label',{id:'agree-row'},[el('input',{id:'agree',type:'checkbox'}),el('span',{text:'Ich habe die Auswahl geprüft.'})]),
       el('div',{class:'footer'},[button('cancel','Abbrechen'),button('confirm','','danger',{disabled:true})])])
   );
@@ -73,7 +73,6 @@
     $('loaded').textContent = `${chats.length} geladene Chats erkannt`;
     $('hint').textContent = chats.length ? 'Bereich auswählen: zuerst eine Checkbox anklicken, dann mit gedrückter Umschalt-Taste die Checkbox am anderen Ende anklicken.' : `Noch keine Chats erkannt. Öffne die ${provider.name}-Seitenleiste und deinen Verlauf. Nicht erkannte Einträge werden nicht gelöscht.`;
     const locked = busy || loading || reviewing;
-    $('save-diagnostics').disabled = locked;
     $('remove').disabled = !selected.size || locked;
     $('all').disabled = !chats.length || locked;
     $('none').disabled = !selected.size || locked;
@@ -224,11 +223,6 @@
     } finally {loading=false;loadController=null;refresh();$('load-more').focus();}
   }
   $('launch').onclick=open;$('close').onclick=close;
-  $('save-diagnostics').onclick=()=>{
-    if(busy||loading||reviewing)return;
-    try {globalThis.ChatCleanerDiagnostics.save();message('Diagnosedatei erstellt. Sie wird lokal gespeichert und nicht automatisch versendet.');}
-    catch {message('Der Diagnosebericht konnte nicht erstellt werden.',true);}
-  };
   $('minimize').onclick=()=>{if(busy||loading)return;$('panel').hidden=true;$('launch').hidden=false;update();$('launch').focus();};
   $('load-more').onclick=loadMore;
   $('stop-loading').onclick=()=>{loadController?.abort();$('loading-progress').textContent='Laden wird angehalten …';};

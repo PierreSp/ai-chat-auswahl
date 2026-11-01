@@ -1,32 +1,74 @@
 # AI Chat-Auswahl
 
-Chrome-Erweiterung zum Auswählen und gemeinsamen Löschen von Chats bei ChatGPT,
-Claude und Gemini. Version **1.2.10**, derzeit in privater Erprobung.
+Chrome-Erweiterung zum Auswählen und gemeinsamen Löschen von Chats bei **ChatGPT,
+Claude und Gemini**. Version **1.3.0**, erste öffentliche Beta.
 
-Die Erweiterung ergänzt Checkboxen in der Verlaufsseitenleiste und zeigt vor
-dem Löschen eine prüfbare Auswahl. Sie arbeitet über die Oberfläche der Website,
-ohne eigene Netzwerkanfragen, API-Schlüssel oder Telemetrie.
+Die Erweiterung ergänzt Checkboxen in der Verlaufsseitenleiste. Vor dem Löschen
+prüfst du die vollständige Auswahl. Auch Codex-Aufgaben im ChatGPT-Verlauf sind
+auswählbar und in der Vorschau gekennzeichnet.
 
-**Löschen ist endgültig.** Bei unklaren Chat-IDs, Menüs oder Dialogen hält der
-Ablauf an. Änderungen an den Websites können Anpassungen erforderlich machen.
+![Auswahlfenster mit künstlichen Beispielchats in einer lokalen Testumgebung](docs/images/auswahl-demo.png)
+
+Die Abbildung zeigt die Erweiterung auf einer lokalen Testseite, keine echten Kontodaten.
+
+**Während des Löschens den Tab geöffnet lassen. Nicht neu laden und nicht zu
+einer anderen Seite wechseln, bis der Vorgang beendet ist.**
+
+Löschen ist endgültig und betrifft dein Konto. Bei Gemini umfasst es auch
+zugehörige Aktivitäten und im Chat erstellte Inhalte wie Canvas-Dokumente.
+Die Erweiterung hält bei uneindeutigen IDs, Menüs oder Dialogen an.
 
 ## Installation
 
-1. Dieses Repository klonen oder den Quellcode als ZIP herunterladen und entpacken.
-2. In Chrome `chrome://extensions` öffnen und den Entwicklermodus einschalten.
-3. „Entpackte Erweiterung laden“ wählen und den Ordner mit `manifest.json` auswählen.
-4. Die Tabs der unterstützten Dienste neu laden und „Chats aufräumen“ öffnen.
+1. [AI Chat-Auswahl 1.3.0 herunterladen](https://github.com/PierreSp/ai-chat-auswahl/releases/download/v1.3.0/ai-chat-auswahl-1.3.0.zip) und entpacken.
+2. In Chrome `chrome://extensions` öffnen und **Entwicklermodus** einschalten.
+3. **Entpackte Erweiterung laden** wählen und den Ordner `ai-chat-auswahl` mit
+   `manifest.json` auswählen. Diesen Ordner anschließend an seinem Platz lassen.
+4. ChatGPT, Claude oder Gemini neu laden und **Chats aufräumen** öffnen.
 
-Nach Änderungen die Erweiterung auf `chrome://extensions` neu laden und danach
-die betroffenen Tabs neu laden. Für die Benutzung sind Node.js und npm nicht nötig.
+Alternativ dieses Repository klonen und dessen Ordner laden. Node.js und npm
+sind für die Benutzung nicht erforderlich. Eine Chrome-Web-Store-Version ist
+noch nicht veröffentlicht.
 
-Für einen Auswahlbereich zuerst eine Checkbox normal anklicken, anschließend
-Umschalt gedrückt halten und die Checkbox am anderen Ende anklicken. Der Zustand
-der End-Checkbox wird auf den Bereich übertragen; Markierungen außerhalb bleiben
-erhalten. Bei Bedarf vorher „Auswahl leeren“ verwenden.
+Bei Updates die Dateien im bestehenden Erweiterungsordner ersetzen, die
+Erweiterung auf `chrome://extensions` neu laden und danach die betroffenen
+Webseiten neu laden. Nicht während eines laufenden Löschvorgangs aktualisieren.
 
-Die vollständige Bedienung, bekannte Grenzen und bisherige Änderungen stehen
-in [README.txt](README.txt).
+## Benutzung
+
+- Chats links ankreuzen. Für einen Bereich zuerst eine Checkbox normal anklicken,
+  anschließend **Umschalt** halten und die Checkbox am anderen Ende anklicken.
+  Ihr neuer Zustand gilt für den ganzen Bereich; bestehende Markierungen
+  außerhalb bleiben erhalten. Bei Bedarf vorher **Auswahl leeren** verwenden.
+- **Weitere Chats laden** scrollt die erkannte Seitenleiste begrenzt weiter.
+  Neue Einträge bleiben abgewählt. Manuelles Scrollen funktioniert ebenfalls.
+- **Auswahl löschen** öffnet die Vorschau. Einzelne Einträge lassen sich dort
+  entfernen. Nach der Prüfung das Bestätigungsfeld anhaken und Löschen starten.
+- Den Tab bis zum Ende geöffnet lassen. **Anhalten** oder **Escape** stoppt
+  weitere Löschungen; eine bereits bestätigte Löschung kann noch fertig werden.
+- Bei einem Abbruch den Verlauf prüfen, bevor du eine neue Auswahl bestätigst.
+
+Geladene Einträge außerhalb des Bildschirms erhalten ebenfalls Checkboxen.
+Eingeklappte Gruppen musst du selbst öffnen. Geschlossene Projekte, Archive und
+Suchergebnisse werden nicht durchsucht. Eine geladene Auswahl ist keine
+vollständige Übersicht aller Chats im Konto.
+
+## Datenschutz und Grenzen
+
+Die Erweiterung arbeitet lokal über die Oberfläche der drei Websites. Keine
+eigenen Netzwerkanfragen, API-Schlüssel, Telemetrie oder Diagnoseexporte. Auswahl
+und Fortschritt liegen nur im Arbeitsspeicher des Tabs. Details: [Datenschutz](PRIVACY.md).
+
+Änderungen an den Websites können Anpassungen erforderlich machen. Die Erkennung
+unterstützt bekannte Oberflächen und Dialogvarianten, nicht jede mögliche Sprache
+oder Kontovariante. Die automatische Testsuite verwendet künstliche Chats.
+Live wurden Menüs und Dialoge untersucht und abgebrochen; produktive Löschungen
+wurden vom Benutzer erprobt. Eine vollständige Live-Testmatrix über alle Dienste
+und Sprachen liegt nicht vor.
+
+Probleme können über [GitHub Issues](https://github.com/PierreSp/ai-chat-auswahl/issues)
+gemeldet werden. Bitte Dienst, Erweiterungsversion und Fehlermeldung angeben;
+private Chat-Titel und Kontodaten vor dem Veröffentlichen entfernen.
 
 ## Entwicklung und Tests
 
@@ -40,46 +82,29 @@ npm test
 
 Die Browsertests laufen in einem neuen temporären Profil. Anfragen an die drei
 Dienste werden durch lokale Testseiten ersetzt; andere Anfragen werden blockiert.
-Die Tests verwenden künstliche Chats und löschen keine echten Kontodaten.
-Optional können `PLAYWRIGHT_MODULE` und `CHROMIUM_PATH` vorhandene Installationen
-angeben.
+Sie löschen keine echten Kontodaten. Optional können `PLAYWRIGHT_MODULE` und
+`CHROMIUM_PATH` vorhandene Installationen angeben.
 
-Die bisherigen Live-Prüfungen bestätigen die Checkbox-Erkennung bei ChatGPT und
-Gemini. ChatGPTs nativer Löschdialog wurde geöffnet und wieder abgebrochen; seine
-Struktur wird durch lokale Tests nachgebildet. Ein vollständiger Live-Löschtest
-mit eigens angelegten Testchats steht noch aus. Die Dialogerkennung unterstützt
-bekannte Strukturen und Textvorlagen, nicht jede mögliche Sprache oder Variante.
+Für das Release-Archiv wird zusätzlich Python 3 benötigt:
 
-Version 1.2.10 verwendet bei Codex-Aufgaben den gespeicherten Titel aus derselben
-geprüften Aufgabenzeile. Dadurch bleiben Zeichen wie Unterstriche erhalten,
-die ChatGPT in der Seitenleiste als Formatierung darstellt, im Löschdialog aber
-wörtlich verwendet. Änderungen des gespeicherten Titels stoppen den Ablauf.
+```sh
+npm run package
+```
 
-Version 1.2.9 berücksichtigt unbenannte ChatGPT-Chats: Die Seitenleiste zeigt
-„New chat“, während der native Löschdialog einen leeren Titel einsetzt. Dieser
-beobachtete Sonderfall wird nur mit passender Chat-ID, eigener Zeile und eigenem
-Menü sowie übereinstimmenden nativen Dialogbeschreibungen akzeptiert.
+Das erzeugt `dist/ai-chat-auswahl-1.3.0.zip` und eine SHA-256-Prüfsumme. Das Archiv
+enthält den direkt ausführbaren Erweiterungsquellcode, Bedienung und Lizenz.
+Entwicklungswerkzeuge, Testdaten und Git-Verlauf werden nicht mitgepackt.
+Zusätzlich entsteht `dist/ai-chat-auswahl-1.3.0-webstore.zip` mit `manifest.json`
+direkt im Archivwurzelverzeichnis für den Store-Upload. Die
+[Store-Vorbereitung](docs/chrome-web-store.md) beschreibt die noch offenen Schritte.
+Hinweise zur [Erkennungsbasis](docs/recognition-sources.txt) liegen im Repository.
 
-ChatGPTs Verlauf unterstützt auch Codex-Aufgaben mit einer nativen Aufgaben-ID.
-Diese erhalten Checkboxen und werden in der Vorschau als „Codex-Aufgabe“ markiert.
-Link, Zeilen-ID und Menü müssen zum selben Eintrag gehören. Die Erweiterung
-berücksichtigt sowohl direkte Löschaktionen als auch vorgeschaltete Dialoge;
-sie wiederholt keine Aktion mit unklarem Ergebnis. Die endgültige Codex-Löschung
-wurde nur mit künstlichen Testdaten geprüft.
+## Lizenz
 
-Geminis aktueller Löschdialog wurde ebenfalls live geöffnet und abgebrochen.
-Version 1.2.8 wartet auch darauf, dass Inhalt, Animation und Metadaten des Dialogs
-fertig aufgebaut sind. Die native Chat-ID muss zur Auswahl passen; widersprüchliche
-oder fehlerhafte Metadaten führen weiterhin zum Abbruch.
+Copyright (C) 2026 Pierre Springer. Freie Software unter der **GNU General Public
+License, Version 3 (GPL-3.0-only)**. Der vollständige Lizenztext steht in [LICENSE](LICENSE).
+Das Programm wird ohne Gewährleistung bereitgestellt.
 
-## Versionsverwaltung und Veröffentlichung
+[Änderungen](CHANGELOG.md) · [Ausführliche Bedienung](README.txt)
 
-Der erste Git-Stand erfasst Version 1.2.6. Ältere Änderungen sind in `README.txt`
-dokumentiert, liegen aber nicht als einzelne Git-Commits vor. ZIPs, lokale
-Diagnosen, Zugangsdaten und Testausgaben gehören nicht ins Repository.
-
-Vor einer öffentlichen Beta sind vollständige Tests mit eigens angelegten Chats
-bei allen drei Diensten sowie die Wahl einer Quellcode-Lizenz vorgesehen. Eine
-Veröffentlichung im Chrome Web Store wäre ein eigener Schritt.
-
-Unabhängiges Hilfsprogramm; kein offizielles Produkt der drei Anbieter.
+Unabhängiges Hilfsprogramm; kein offizielles Produkt von OpenAI, Anthropic oder Google.
