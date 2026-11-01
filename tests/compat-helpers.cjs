@@ -75,13 +75,14 @@ async function liveChatGPTDialog(page, settings={}) {
    const dialog=document.querySelector('dialog');if(!dialog||dialog.dataset.liveShape)return;
    dialog.dataset.liveShape='true';
    const heading=dialog.querySelector('h2'),description=dialog.querySelector('p');
-   const title=settings.title||'Alte Notizen';
+   const title=settings.title??'Alte Notizen';
    const sentence=value=>`This will permanently delete ${value}. This can't be undone.`;
-   description.id='native-description';description.textContent=settings.buttonOnly?'Confirm removal.':sentence(settings.describedTitle||title);
+   description.id='native-description';description.textContent=settings.buttonOnly?'Confirm removal.':sentence(settings.describedTitle??title);
    description.style.cssText='position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)';
    dialog.setAttribute('aria-describedby',description.id);
+   if(settings.nativeShell){dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('data-overlay-owner','slate-sidebar');}
    const form=document.createElement('form'),visibleHeading=document.createElement('div'),visibleDescription=document.createElement('div');
-   visibleHeading.textContent=heading.textContent;visibleDescription.textContent=settings.buttonOnly?'Confirm removal.':sentence(title);
+   visibleHeading.textContent=heading.textContent;visibleDescription.textContent=settings.noVisibleCopy?'Confirm removal.':settings.buttonOnly?'Confirm removal.':sentence(title);
    form.append(visibleHeading,visibleDescription);
    for(const button of [...dialog.querySelectorAll('button')]){
     if(button.hasAttribute('data-testid')){button.removeAttribute('data-testid');button.textContent='Delete chat';button.type='button';}

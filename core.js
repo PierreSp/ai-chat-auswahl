@@ -222,7 +222,27 @@
       .map(Provider.confirmationIdentity).filter(id => id !== undefined);
     return ids.length > 1 || ids.some(id => id !== item.id);
   }
-  function validDialog(dialog, item) {
+  function untitledChatGPTDialog(dialog, item, target, sentence) {
+    // ChatGPT renders its empty stored title as "New chat" in the sidebar,
+    // but interpolates an empty string in both native confirmation copies.
+    // Only this observed placeholder/shape can use the already-bound row ID.
+    if (item.title !== 'New chat' || Provider.isTask(item.id) ||
+        !dialog.matches('[role="dialog"][data-overlay-owner="slate-sidebar"][aria-modal="true"]')) return false;
+    const row = target?.anchor.closest('[data-sidebar-cycle-item][role="group"]');
+    if (!row || !target.root.contains(row) || !row.contains(target.menu) || row.querySelectorAll(menuButtons).length !== 1) return false;
+    const links = [...row.querySelectorAll('a[href]')];
+    if (!links.length || links.some(link => chatId(link) !== item.id)) return false;
+    const described = (dialog.getAttribute('aria-describedby') || '').trim().split(/\s+/);
+    const description = described.length === 1 ? document.getElementById(described[0]) : null;
+    if (!description?.matches('p') || !dialog.contains(description) || normal(description.textContent) !== sentence) return false;
+    const forms = dialog.querySelectorAll('form');
+    if (forms.length !== 1 || named(forms[0], 'button, [role="button"]', cancelNames).length !== 1 ||
+        deleteControls(forms[0], 'button, [role="button"]', true).length !== 1) return false;
+    const controls = 'button, [role="button"], a, input, select, textarea, [role="menuitem"], h1, h2, h3, [role="heading"]';
+    return [...forms[0].querySelectorAll('p, div, span')].some(el =>
+      !el.closest(controls) && !el.querySelector(controls) && visible(el) && normal(el.textContent) === sentence);
+  }
+  function validDialog(dialog, item, target) {
     if (dialogIdentityConflict(dialog, item)) return false;
     const nativeConfirmationControls = [...dialog.querySelectorAll('button, [role="button"]')]
       .filter(control => Provider.confirmationIdentity(control) !== undefined);
@@ -255,7 +275,8 @@
       const controls='button, [role="button"], a, input, select, textarea, [role="menuitem"], h1, h2, h3, h4, h5, h6, [role="heading"]';
       const titles=new Set([...dialog.querySelectorAll('p, div, span')]
         .filter(el=>!el.closest(controls)&&!el.querySelector(controls))
-        .map(el=>normal(el.textContent).match(/^This will permanently delete (.+)\. This (?:can't|can’t|cannot) be undone\.$/)?.[1]).filter(Boolean));
+        .map(el=>normal(el.textContent).match(/^This will permanently delete (.*)\. This (?:can't|can’t|cannot) be undone\.$/)?.[1]).filter(title=>title!==undefined));
+      if (titles.has('')) return titles.size===1 && untitledChatGPTDialog(dialog, item, target, "This will permanently delete . This can't be undone.");
       if (titles.size) return titles.size===1 && titles.has(item.title);
     }
     if (titleInDialog(dialog, item.title)) return true;
@@ -400,7 +421,7 @@
               !controls.some(control => Provider.confirmationIdentity(control) !== undefined || semanticDelete(control, true))) return false;
           return true;
         }, 'Der Löschdialog wurde nicht vollständig geladen. Bitte den Verlauf prüfen.', signal);
-        if (!validDialog(dialog, item)) {
+        if (!validDialog(dialog, item, target)) {
           throw new Error(`Der Löschdialog bestätigt nicht eindeutig „${item.title}“. Es wird nicht weitergelöscht.`);
         }
         const buttons = deleteControls(dialog, 'button, [role="button"]', true);

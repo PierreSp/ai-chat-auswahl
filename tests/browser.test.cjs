@@ -125,6 +125,35 @@ async function diagnosticReport(p){
  return JSON.parse(fs.readFileSync(await (await download).path(),'utf8'));
 }
 
+async function untitledChatGPT(p,settings={}) {
+ await reportedChatGPT(p);
+ await p.evaluate(settings=>{
+  for(const row of document.querySelectorAll('#rows .row')){
+   row.setAttribute('data-sidebar-cycle-item','');row.querySelector('a span').textContent='New chat';
+  }
+  const row=document.querySelector('[data-id$="0002"]');
+  if(settings.named)row.querySelector('a span').textContent='Alte Notizen';
+  if(settings.noRowMarker)row.removeAttribute('data-sidebar-cycle-item');
+  if(settings.foreignMenu){row.querySelector('button').remove();row.parentElement.append(document.querySelector('[data-id$="0001"] button'));}
+  if(settings.foreignId)options.dialogId='00000000-0000-4000-8000-000000000099';
+ },settings);
+ await liveChatGPTDialog(p,{title:'',nativeShell:true,...settings});
+}
+test('untitled ChatGPT: empty native title confirms only the selected ID among duplicate New chat labels',async t=>{
+ const p=await pageFor(t);await untitledChatGPT(p);
+ await p.locator('[data-id$="0002"]').getByRole('checkbox').check();await confirm(p);await status(p,/Angehalten|Fertig/);
+ assert.deepEqual(await p.evaluate(()=>window.deleted),['00000000-0000-4000-8000-000000000002']);
+});
+for(const [name,settings] of [
+ ['named chat',{named:true}],['unknown row structure',{noRowMarker:true}],
+ ['foreign row menu',{foreignMenu:true}],['foreign dialog ID',{foreignId:true}],
+ ['conflicting accessible title',{describedTitle:'Unbeteiligter Chat'}],
+ ['missing visible copy',{noVisibleCopy:true}],['unknown dialog structure',{nativeShell:false}]
+])test(`untitled ChatGPT: rejects ${name}`,async t=>{
+ const p=await pageFor(t);await untitledChatGPT(p,settings);
+ await p.locator('[data-id$="0002"]').getByRole('checkbox').check();await confirm(p);await status(p,/Angehalten|Fertig/);
+ assert.deepEqual(await p.evaluate(()=>window.deleted),[]);
+});
 test('live ChatGPT dialog: full title in repeated plain prose confirms only the selected fixture chat',async t=>{
  const p=await pageFor(t);await liveChatGPTDialog(p);
  await box(p,'Alte Notizen').check();await confirm(p);await status(p,/Angehalten|Fertig/);
