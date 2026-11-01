@@ -1,7 +1,7 @@
 # AI Chat-Auswahl
 
 Chrome-Erweiterung zum Auswählen und gemeinsamen Löschen von Chats bei ChatGPT,
-Claude und Gemini. Version **1.2.9**, derzeit in privater Erprobung.
+Claude und Gemini. Version **1.2.10**, derzeit in privater Erprobung.
 
 Die Erweiterung ergänzt Checkboxen in der Verlaufsseitenleiste und zeigt vor
 dem Löschen eine prüfbare Auswahl. Sie arbeitet über die Oberfläche der Website,
@@ -19,6 +19,11 @@ Ablauf an. Änderungen an den Websites können Anpassungen erforderlich machen.
 
 Nach Änderungen die Erweiterung auf `chrome://extensions` neu laden und danach
 die betroffenen Tabs neu laden. Für die Benutzung sind Node.js und npm nicht nötig.
+
+Für einen Auswahlbereich zuerst eine Checkbox normal anklicken, anschließend
+Umschalt gedrückt halten und die Checkbox am anderen Ende anklicken. Der Zustand
+der End-Checkbox wird auf den Bereich übertragen; Markierungen außerhalb bleiben
+erhalten. Bei Bedarf vorher „Auswahl leeren“ verwenden.
 
 Die vollständige Bedienung, bekannte Grenzen und bisherige Änderungen stehen
 in [README.txt](README.txt).
@@ -44,6 +49,11 @@ Gemini. ChatGPTs nativer Löschdialog wurde geöffnet und wieder abgebrochen; se
 Struktur wird durch lokale Tests nachgebildet. Ein vollständiger Live-Löschtest
 mit eigens angelegten Testchats steht noch aus. Die Dialogerkennung unterstützt
 bekannte Strukturen und Textvorlagen, nicht jede mögliche Sprache oder Variante.
+
+Version 1.2.10 verwendet bei Codex-Aufgaben den gespeicherten Titel aus derselben
+geprüften Aufgabenzeile. Dadurch bleiben Zeichen wie Unterstriche erhalten,
+die ChatGPT in der Seitenleiste als Formatierung darstellt, im Löschdialog aber
+wörtlich verwendet. Änderungen des gespeicherten Titels stoppen den Ablauf.
 
 Version 1.2.9 berücksichtigt unbenannte ChatGPT-Chats: Die Seitenleiste zeigt
 „New chat“, während der native Löschdialog einen leeren Titel einsetzt. Dieser

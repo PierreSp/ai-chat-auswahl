@@ -9,6 +9,39 @@ before(async()=>{profile=fs.mkdtempSync(path.join(os.tmpdir(),'chat-cleaner-test
 after(async()=>{await context?.close();if(profile)fs.rmSync(profile,{recursive:true,force:true});});
 async function pageFor(t,url='https://chatgpt.com/'){const p=await context.newPage();p.setDefaultTimeout(2500);t.after(()=>p.close());await p.goto(url);await p.getByRole('button',{name:'Chats aufräumen',exact:true}).click();return p;}
 const box=(p,title)=>p.getByRole('checkbox',{name:`Chat auswählen: ${title}`,exact:true});
+test('Codex raw title: rendered formatting does not change the confirmation title',async t=>{
+ const p=await pageFor(t);await codexTasks(p);
+ await p.evaluate(()=>{
+  const row=document.querySelector('[data-app-action-sidebar-thread-row]');
+  row.setAttribute('data-app-action-sidebar-thread-title','Datei __cache__ aktualisieren');
+  row.querySelector('a span').textContent='Datei cache aktualisieren';
+ });
+ await liveChatGPTDialog(p,{title:'Datei __cache__ aktualisieren'});
+ await p.locator('[data-app-action-sidebar-thread-row]').getByRole('checkbox').check();await confirm(p);await status(p,/Angehalten|Fertig/);
+ assert.deepEqual(await p.evaluate(()=>window.deleted),['task_e_00000000000000000000000000000001']);
+});
+test('Codex raw title: changing stored title after selection stops before any menu action',async t=>{
+ const p=await pageFor(t);await codexTasks(p);
+ await p.evaluate(()=>document.querySelector('[data-app-action-sidebar-thread-row]').setAttribute('data-app-action-sidebar-thread-title','Codex-Testaufgabe'));
+ await box(p,'Codex-Testaufgabe').check();
+ await p.evaluate(()=>{
+  document.querySelector('[data-app-action-sidebar-thread-row]').setAttribute('data-app-action-sidebar-thread-title','Andere Aufgabe');
+  window.menuClicks=0;document.querySelector('[data-app-action-sidebar-thread-row] button').addEventListener('click',()=>window.menuClicks++);
+ });
+ await confirm(p);await status(p,/Angehalten|Fertig/);assert.equal(await p.evaluate(()=>window.menuClicks),0);assert.deepEqual(await p.evaluate(()=>window.deleted),[]);
+});
+for(const target of ['input','label'])for(const reverse of [false,true])test(`range selection: shift on ${target}, ${reverse?'up':'down'}, selects and clears the interval`,async t=>{
+ const p=await pageFor(t),names=reverse?['Behalten: Projektideen','Urlaub planen']:['Urlaub planen','Behalten: Projektideen'];
+ const click=async(name,shift=false)=>{
+  const input=box(p,name),locator=target==='input'?input:input.locator('..');
+  await locator.click({modifiers:shift?['Shift']:[],...(target==='label'?{position:{x:2,y:2}}:{})});
+ };
+ await click(names[0]);await click(names[1],true);
+ assert.equal(await p.getByRole('checkbox',{name:/Chat auswählen:/}).evaluateAll(els=>els.filter(el=>el.checked).length),3);
+ await click(names[0],true);
+ assert.equal(await p.getByRole('checkbox',{name:/Chat auswählen:/}).evaluateAll(els=>els.filter(el=>el.checked).length),0);
+ assert.equal(p.url(),'https://chatgpt.com/');assert.deepEqual(await p.evaluate(()=>window.deleted),[]);
+});
 for(const mode of ['body','animation','metadata'])test(`staged Gemini: waits for ${mode} before confirming the selected ID`,async t=>{
  const p=await pageFor(t,'https://gemini.google.com/app');await stagedGeminiDialog(p,mode);await box(p,'Alte Notizen').check();
  await confirm(p);await status(p,/Angehalten|Fertig/);assert.deepEqual(await p.evaluate(()=>window.deleted),['8000000000000002']);

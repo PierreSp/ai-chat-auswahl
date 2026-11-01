@@ -1,4 +1,4 @@
-AI CHAT-AUSWAHL — Version 1.2.9
+AI CHAT-AUSWAHL — Version 1.2.10
 Für ChatGPT, Claude und Gemini im Chrome-Browser.
 Kostenlos, lokal installiert, ohne API-Schlüssel oder Tracking.
 
@@ -23,7 +23,10 @@ in Chrome auf Windows, macOS und Linux; nicht in den nativen Chat-Apps.
 BEDIENUNG
 - Unten rechts „Chats aufräumen“ öffnen, danach die Verlaufsseitenleiste öffnen.
 - Die Anzeige nennt den erkannten Dienst und die Anzahl geladener Chats.
-- Chats über die Checkboxen auswählen; Umschalt + Klick markiert einen Bereich.
+- Chats über die Checkboxen auswählen. Für einen Bereich zuerst eine Checkbox
+  normal anklicken, dann Umschalt halten und die Checkbox am anderen Ende
+  anklicken. Ihr neuer Zustand gilt für den ganzen Bereich. Markierungen außerhalb
+  bleiben bestehen; bei Bedarf vorher „Auswahl leeren“ verwenden.
 - „Alle geladenen auswählen“ wählt nur aktuell erkannte Einträge aus.
 - Ältere Chats mit „Weitere Chats laden“ nachladen. Die Erweiterung scrollt
   dafür die erkannte Seitenleiste höchstens 30 Sekunden / 40 Schritte pro
@@ -42,6 +45,18 @@ BEDIENUNG
 Löschen ist endgültig und betrifft das Konto, nicht nur diesen Computer.
 Bei Gemini werden auch zugehörige Gemini-Aktivitäten und im Chat erzeugte Inhalte
 wie Canvas-Dokumente oder -Apps gelöscht. Der Hinweis steht auch in der Vorschau.
+
+VERSION 1.2.10: GESPEICHERTE CODEX-TITEL UND BEREICHSAUSWAHL
+- Codex zeigt Titel in der Seitenleiste formatiert an, verwendet im Löschdialog
+  aber den gespeicherten Text einschließlich Formatierungszeichen. Die Erweiterung
+  verwendet jetzt den gespeicherten Titel genau derselben ID-geprüften Aufgabenzeile.
+- Vorschau und Bestätigung stimmen dadurch überein, ohne Zeichen pauschal aus
+  Titeln zu entfernen. Ändert sich der gespeicherte Titel nach der Auswahl,
+  hält die Verarbeitung weiterhin vor der Löschung an.
+- Umschalt-Auswahl live sowie lokal für Checkbox und größere Klickfläche in
+  beide Richtungen geprüft. Sie funktioniert; die Anleitung nennt jetzt
+  ausdrücklich den ersten normalen Checkbox-Klick und den zweiten mit Umschalt.
+- Keine echten Chats oder Aufgaben wurden bei dieser Prüfung gelöscht.
 
 VERSION 1.2.9: UNBENANNTE CHATGPT-CHATS
 - Live beobachtet: Die Seitenleiste zeigt „New chat“, aber der Löschdialog

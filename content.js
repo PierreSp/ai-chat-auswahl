@@ -71,7 +71,7 @@
   function update() {
     $('number').textContent = selected.size;
     $('loaded').textContent = `${chats.length} geladene Chats erkannt`;
-    $('hint').textContent = chats.length ? 'Chats links ankreuzen. Mit Umschalt + Klick einen Bereich auswählen.' : `Noch keine Chats erkannt. Öffne die ${provider.name}-Seitenleiste und deinen Verlauf. Nicht erkannte Einträge werden nicht gelöscht.`;
+    $('hint').textContent = chats.length ? 'Bereich auswählen: zuerst eine Checkbox anklicken, dann mit gedrückter Umschalt-Taste die Checkbox am anderen Ende anklicken.' : `Noch keine Chats erkannt. Öffne die ${provider.name}-Seitenleiste und deinen Verlauf. Nicht erkannte Einträge werden nicht gelöscht.`;
     const locked = busy || loading || reviewing;
     $('save-diagnostics').disabled = locked;
     $('remove').disabled = !selected.size || locked;
@@ -152,7 +152,7 @@
     refreshTimer = setTimeout(() => {refreshTimer = null;refresh();},120);
   }
   const observer = new MutationObserver(scheduleRefresh);
-  observer.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['href','id','data-conversation-id','data-conversation-options-trigger','data-sidebar-item','data-sidebar-keep-open','data-app-action-sidebar-thread-id','data-app-action-sidebar-thread-kind','data-app-action-sidebar-thread-row','data-test-id','data-testid','jslog','aria-label','hidden','aria-hidden','open','class','style'],characterData:true});
+  observer.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['href','id','data-conversation-id','data-conversation-options-trigger','data-sidebar-item','data-sidebar-keep-open','data-app-action-sidebar-thread-id','data-app-action-sidebar-thread-kind','data-app-action-sidebar-thread-row','data-app-action-sidebar-thread-title','data-test-id','data-testid','jslog','aria-label','hidden','aria-hidden','open','class','style'],characterData:true});
   function open() { if (busy || loading) return;opened=true;$('panel').hidden=false;$('launch').hidden=true;refresh();$('close').focus(); }
   function close() {
     if (busy || loading) return;

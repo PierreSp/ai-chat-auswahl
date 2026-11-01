@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AI Chat-Auswahl",
-  "version": "1.2.9",
+  "version": "1.2.10",
   "description": "Chats in ChatGPT, Claude und Gemini per Checkbox auswählen, prüfen und gemeinsam löschen. Lokal, ohne Tracking.",
   "content_scripts": [
     {

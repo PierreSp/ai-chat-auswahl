@@ -143,6 +143,12 @@
   const confirmationIdentity = control => nativeActionIdentity(control, '186009');
   const deleteMenuIdentity = control => nativeActionIdentity(control, '186000');
   function title(entry) {
+    if (profile.key === 'chatgpt' && isTask(identity(entry))) {
+      // Codex renders formatting in the sidebar but confirms the stored title
+      // verbatim (for example __cache__). Use only this ID-validated row's title.
+      const stored = normal(entry.closest('[data-app-action-sidebar-thread-row]')?.getAttribute('data-app-action-sidebar-thread-title'));
+      if (stored) return stored;
+    }
     const preferred = profile.key === 'gemini' ? entry.querySelector('.conversation-title, [data-test-id="conversation-title"], .mdc-list-item__primary-text') : null;
     const copy = (preferred || entry).cloneNode(true);
     copy.querySelectorAll('button, [role="button"], svg, mat-icon, gem-icon, [aria-hidden="true"], [data-cc-box]').forEach(el => el.remove());
