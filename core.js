@@ -92,6 +92,17 @@
     }
     return [...found.values()];
   }
+  function excludedWorkCount() {
+    if (Provider.key !== 'chatgpt') return 0;
+    const ids = new Set();
+    const scopeRoots = [...document.querySelectorAll(sidebars)].filter(Provider.isScopeRoot).filter(visible);
+    for (const root of scopeRoots) for (const link of root.querySelectorAll('a[href]')) {
+      if (!visible(link)) continue;
+      const id = Provider.workIdentity(link.getAttribute('href'));
+      if (id) ids.add(id);
+    }
+    return ids.size;
+  }
 
   async function loadMore(signal, onProgress) {
     const initial = discover();
@@ -166,6 +177,7 @@
     });
   }
   function semanticDelete(control, confirmation = false) {
+    if (confirmation && Provider.confirmationIdentity(control)) return true;
     const marker = Provider.key === 'chatgpt'
       ? '[data-testid="delete-chat-menu-item"], [data-testid="delete-conversation-confirm-button"]'
       : Provider.key === 'gemini' ? '[data-test-id="delete-button"]' : null;
@@ -213,8 +225,24 @@
     const explicitTitles = [...dialog.querySelectorAll('strong, b, [data-chat-title], [data-testid="conversation-title"]')]
       .filter(el => !el.closest('button, [role="button"], h1, h2, h3, [role="heading"]'));
     if (explicitTitles.some(el => normal(el.textContent) && normal(el.textContent) !== item.title)) return false;
+    const nativeConfirmationControls = [...dialog.querySelectorAll('button, [role="button"]')]
+      .filter(control => Provider.confirmationIdentity(control) !== undefined);
+    const nativeConfirmationIds = nativeConfirmationControls.map(Provider.confirmationIdentity);
+    if (nativeConfirmationIds.length) {
+      const actions = deleteControls(dialog, 'button, [role="button"]', true);
+      if (nativeConfirmationIds.length !== 1 || nativeConfirmationIds[0] !== item.id ||
+          actions.length !== 1 || actions[0] !== nativeConfirmationControls[0]) return false;
+    }
     const description = dialog.cloneNode(true);
     description.querySelectorAll('h1, h2, h3, h4, h5, h6, [role="heading"], button, [role="button"], svg, mat-icon, gem-icon, [aria-hidden="true"]').forEach(el => el.remove());
+    if (nativeConfirmationIds.length === 1) {
+      // This generic warning starts with "This will delete", but names data
+      // categories rather than a chat. Exempt only this exact observed warning
+      // after the native confirmation metadata has matched the selected ID.
+      description.querySelectorAll('p').forEach(el => {
+        if (normal(el.textContent) === 'This will delete prompts, responses and feedback from your Gemini Apps activity, plus any content that you created.') el.remove();
+      });
+    }
     const descriptionText = normal(description.textContent);
     // Some older dialogs interpolate the title into a text node rather than
     // marking it up. Keep recognizing that explicit target as a veto, even
@@ -322,13 +350,24 @@
       }, 'Das Chat-Menü wurde nicht erkannt.', signal);
       // Gemini owns menu state on gem-icon-button, while its inner native
       // button receives the click. Conflicting associations must still stop.
-      const associations = new Set([target.menu, target.controller].map(node => normal(node.getAttribute('aria-controls'))).filter(Boolean));
-      const controls = [...associations][0];
-      if (associations.size !== 1 || (menu.id !== controls && !document.getElementById(controls)?.contains(menu))) {
-        throw new Error('Das geöffnete Menü gehört nicht eindeutig zum ausgewählten Chat.');
-      }
+      await waitFor(() => {
+        guard.verify();assertBoundTarget(target, item);
+        const menus = shown('[role="menu"]');
+        if (menus.length !== 1 || menus[0] !== menu) throw new Error('Das geöffnete Chat-Menü hat sich während der Zuordnung verändert.');
+        const associations = new Set([target.menu, target.controller].map(node => normal(node.getAttribute('aria-controls'))).filter(Boolean));
+        // Angular can render the menu before attaching aria-controls to its
+        // trigger. Wait only for absent evidence; conflicting evidence fails.
+        if (!associations.size) return false;
+        const controls = [...associations][0];
+        if (associations.size !== 1 || (menu.id !== controls && !document.getElementById(controls)?.contains(menu))) {
+          throw new Error('Das geöffnete Menü gehört nicht eindeutig zum ausgewählten Chat.');
+        }
+        return true;
+      }, 'Das geöffnete Menü gehört nicht eindeutig zum ausgewählten Chat.', signal);
       const remove = deleteControls(menu, '[role="menuitem"]');
       if (remove.length !== 1) throw new Error('Der Menüpunkt „Löschen“ wurde nicht eindeutig erkannt. Die Oberfläche stellt keine eindeutige Löschaktion bereit.');
+      const menuIdentity = Provider.deleteMenuIdentity(remove[0]);
+      if (menuIdentity !== undefined && menuIdentity !== item.id) throw new Error('Der Menüpunkt zum Löschen bestätigt nicht die ausgewählte Chat-ID.');
       if (remove[0].disabled || remove[0].getAttribute('aria-disabled') === 'true') throw new Error('Der Menüpunkt zum Löschen ist deaktiviert.');
       check(signal);
       guard.verify();
@@ -368,5 +407,5 @@
     }
   }
 
-  globalThis.ChatCleanerCore = Object.freeze({discover, inspect, loadMore, preflight, deleteChat, createBatchGuard, normal, provider: Provider});
+  globalThis.ChatCleanerCore = Object.freeze({discover, inspect, excludedWorkCount, loadMore, preflight, deleteChat, createBatchGuard, normal, provider: Provider});
 })();

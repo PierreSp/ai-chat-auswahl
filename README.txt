@@ -1,4 +1,4 @@
-AI CHAT-AUSWAHL — Version 1.2.6
+AI CHAT-AUSWAHL — Version 1.2.7
 Für ChatGPT, Claude und Gemini im Chrome-Browser.
 Kostenlos, lokal installiert, ohne API-Schlüssel oder Tracking.
 
@@ -42,6 +42,22 @@ BEDIENUNG
 Löschen ist endgültig und betrifft das Konto, nicht nur diesen Computer.
 Bei Gemini werden auch zugehörige Gemini-Aktivitäten und im Chat erzeugte Inhalte
 wie Canvas-Dokumente oder -Apps gelöscht. Der Hinweis steht auch in der Vorschau.
+
+VERSION 1.2.7: GEMINI-DIALOG UND GEMISCHTER CHATGPT-VERLAUF
+- Gemini wurde live bis zum nativen Bestätigungsdialog geprüft und abgebrochen.
+  Die Erweiterung wartet jetzt begrenzt, wenn das Menü schon sichtbar ist,
+  seine Zuordnung am Auslöser aber noch fehlt. Widersprüche stoppen sofort.
+- Die aktuellen nativen Gemini-Löschaktionen tragen die Chat-ID in Metadaten.
+  Diese muss zur Auswahl passen. Bei dieser Variante sind ein fehlender oder
+  mehrfacher Metadatenblock, fremde IDs und versteckte Bestätigungsknöpfe kein
+  gültiger Nachweis. Die geprüfte Bestätigung ist genau der geklickte Knopf.
+- ChatGPT wurde live nachgeladen: Alle 35 erkannten normalen Chats hatten
+  Checkboxen. Die darunter angezeigten Einträge waren ältere Codex-Aufgaben,
+  die weiterhin nicht gelöscht werden. Das Auswahlfenster erklärt diese
+  ausgeschlossenen Aufgaben jetzt ausdrücklich und nennt den Filter „Chat“.
+- Die Nachladefunktion scrollt die Liste, kann aber keine weiteren Einträge
+  erzwingen, wenn die Website keine nachliefert. Ein vollständiger Live-Löschtest
+  mit eigens angelegten Testchats steht weiter aus; echte Chats wurden nicht gelöscht.
 
 VERSION 1.2.6: CHATGPT-DIALOG LIVE UNTERSUCHT
 - Der angemeldete Chrome-Browser war nun verbunden. ChatGPTs Löschdialog wurde
@@ -235,7 +251,7 @@ content.js / content.css / ui-style.js: Checkboxen, Auswahl und Oberfläche.
 popup.*: Erweiterungsmenü. manifest.json: Chrome-Konfiguration.
 tests/: ausschließlich lokale Beispiele, keine Kontodaten.
 
-Entwicklung (Node.js 20+): npm install; npx playwright install chromium; npm test.
+Entwicklung (Node.js 20+): npm ci; npx playwright install chromium; npm test.
 Tests verwenden ein neues temporäres Profil. Webseitenanfragen werden durch
 lokale Testdaten ersetzt, andere Anfragen blockiert. Optional PLAYWRIGHT_MODULE
 und CHROMIUM_PATH auf vorhandene Installationen setzen. Für die normale

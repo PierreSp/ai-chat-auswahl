@@ -33,6 +33,21 @@
       return url.pathname.match(profile.path)?.[1].toLowerCase() || null;
     } catch { return null; }
   }
+  function workIdentity(href) {
+    if (profile.key !== 'chatgpt' || !href) return null;
+    try {
+      const url = new URL(href, location.origin);
+      return url.origin === location.origin ? url.pathname.match(/^\/remote\/(task_e_[0-9a-f]{32})\/?$/i)?.[1].toLowerCase() || null : null;
+    } catch { return null; }
+  }
+  function chatGPTNavigation(root, identify) {
+    if (!root.matches('nav[role="navigation"]') || !root.closest('aside') || root.closest('main, [role="main"]')) return false;
+    const links = [...root.querySelectorAll('a[href]')];
+    const home = links.some(a => {
+      try {const url=new URL(a.getAttribute('href'),location.origin);return url.origin===location.origin && url.pathname==='/';}catch{return false;}
+    });
+    return home && links.some(a => identify(a.getAttribute('href')));
+  }
   function chatGPTIdentity(entry) {
     if (entry.matches('[data-sidebar-keep-open="true"]')) return null;
     if (entry.matches('a[href]') && !fromURL(entry.getAttribute('href'))) return null;
@@ -97,6 +112,20 @@
     const owner=entry.parentElement?.closest('[data-test-id="conversation"]');
     return owner && identity(owner)!==id ? null : id; // Never identify by order or title.
   }
+  function nativeActionIdentity(control, action) {
+    // Gemini's current confirmation has no test ID. Its native action marker
+    // and conversation metadata identify the action independently of locale.
+    const log = control.getAttribute('jslog') || '';
+    if (profile.key !== 'gemini' || !new RegExp(`^\\s*${action}\\s*(?:;|$)`).test(log)) return undefined;
+    // Native destructive actions require exactly one real metadata field;
+    // legacy row parsing's quoted-ID fallback must not authorize a click.
+    if (log.split(';').filter(field => /^\s*BardVeMetadataKey:/.test(field)).length !== 1) return null;
+    const ids = metadataIds(control);
+    const unique = new Set(ids || []);
+    return ids && unique.size === 1 ? [...unique][0] : null;
+  }
+  const confirmationIdentity = control => nativeActionIdentity(control, '186009');
+  const deleteMenuIdentity = control => nativeActionIdentity(control, '186000');
   function title(entry) {
     const preferred = profile.key === 'gemini' ? entry.querySelector('.conversation-title, [data-test-id="conversation-title"], .mdc-list-item__primary-text') : null;
     const copy = (preferred || entry).cloneNode(true);
@@ -113,13 +142,7 @@
       if (root.matches('#history, #ds-sidebar, #sidebar, #stage-slideover-sidebar, [data-testid="history"], [data-testid="sidebar"], [data-testid="history-sidebar"], nav[aria-label="Chat history"], nav[aria-label="Chatverlauf"]')) return true;
       // Current layout: localized navigation in an aside, ordinary /c/ links,
       // no history test IDs or data-sidebar-item attributes.
-      if (root.matches('nav[role="navigation"]') && root.closest('aside')) {
-        const links = [...root.querySelectorAll('a[href]')];
-        const home = links.some(a => {
-          try {const url=new URL(a.getAttribute('href'),location.origin);return url.origin===location.origin && url.pathname==='/';}catch{return false;}
-        });
-        if (home && links.some(a => fromURL(a.getAttribute('href')))) return true;
-      }
+      if (chatGPTNavigation(root, fromURL)) return true;
       return Boolean(root.querySelector('[data-sidebar-item="true"] [data-conversation-options-trigger], button[data-testid^="history-item-"][data-testid$="-options"]'));
     }
     if (profile.key !== 'claude') return true;
@@ -130,6 +153,7 @@
     }));
     return paths.has('/new') && (paths.has('/recents') || paths.has('/chats'));
   }
+  const isScopeRoot = root => isRoot(root) || (profile.key === 'chatgpt' && chatGPTNavigation(root, workIdentity));
   // Text fallback for older dialogs without semantic destructive controls.
   const genericDescriptions = new Set([
     'This will permanently delete this chat. This cannot be undone.',
@@ -144,5 +168,5 @@
     'Möchtest du diesen Chat wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
     'Diese Aktion kann nicht rückgängig gemacht werden.'
   ]);
-  globalThis.ChatCleanerProvider = Object.freeze({...profile, identity, title, normal, isRoot, genericDescriptions});
+  globalThis.ChatCleanerProvider = Object.freeze({...profile, identity, confirmationIdentity, deleteMenuIdentity, title, normal, isRoot, isScopeRoot, workIdentity, genericDescriptions});
 })();

@@ -2,13 +2,72 @@ const {test,before,after}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');const path=require('node:path');const os=require('node:os');
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
-const {modernChatGPT,metadataGemini,reportedChatGPT,reportedGemini,liveChatGPTDialog}=require('./compat-helpers.cjs');
+const {modernChatGPT,metadataGemini,reportedChatGPT,reportedGemini,liveChatGPTDialog,liveGemini}=require('./compat-helpers.cjs');
 const extension=path.resolve(__dirname,'..');const fixture=fs.readFileSync(path.join(__dirname,'fixture.html'),'utf8');
 let context,profile;
 before(async()=>{profile=fs.mkdtempSync(path.join(os.tmpdir(),'chat-cleaner-test-'));context=await chromium.launchPersistentContext(profile,{channel:'chromium',executablePath:process.env.CHROMIUM_PATH,headless:true,args:[`--disable-extensions-except=${extension}`,`--load-extension=${extension}`]});await context.route('**/*',r=>['chatgpt.com','claude.ai','gemini.google.com'].includes(new URL(r.request().url()).hostname)?r.fulfill({contentType:'text/html',headers:r.request().url().includes('tt=1')?{'Content-Security-Policy':"require-trusted-types-for 'script'"}:{},body:fixture}):r.abort());});
 after(async()=>{await context?.close();if(profile)fs.rmSync(profile,{recursive:true,force:true});});
 async function pageFor(t,url='https://chatgpt.com/'){const p=await context.newPage();p.setDefaultTimeout(2500);t.after(()=>p.close());await p.goto(url);await p.getByRole('button',{name:'Chats aufräumen',exact:true}).click();return p;}
 const box=(p,title)=>p.getByRole('checkbox',{name:`Chat auswählen: ${title}`,exact:true});
+for(const [name,settings] of [
+ ['current native dialog',{}],
+ ['delayed menu binding',{bindingDelay:250}],
+ ['localized metadata-bound confirmation',{heading:'Supprimer la discussion ?',description:'Cette discussion sera supprimée définitivement.',confirmName:'Supprimer',cancelName:'Annuler'}]
+])test(`live Gemini: ${name} deletes only the selected fixture ID`,async t=>{
+ const p=await pageFor(t,'https://gemini.google.com/app');await liveGemini(p,settings);
+ await box(p,'Alte Notizen').check();await confirm(p);await status(p,/Angehalten|Fertig/);
+ assert.deepEqual(await p.evaluate(()=>window.deleted),['8000000000000002']);
+});
+for(const [name,settings] of [
+ ['foreign confirmation ID',{confirmId:'8000000000000099'}],
+ ['foreign delete-menu metadata',{menuId:'8000000000000099'}],
+ ['conflicting confirmation IDs',{confirmIds:['c_8000000000000002','c_8000000000000099']}],
+ ['malformed confirmation metadata',{invalidMetadata:true}],
+ ['missing native metadata field',{missingMetadataKey:true}],
+ ['duplicate native metadata fields',{duplicateMetadataKey:true}],
+ ['metadata on a hidden button authorizing a different control',{hiddenMetadata:true}],
+ ['unknown action even with matching ID',{action:'987654',confirmName:'Supprimer'}],
+ ['foreign title in prose despite matching metadata',{description:'This will delete Behalten: Projektideen.'}],
+ ['delayed foreign menu binding',{bindingDelay:250,foreignMenu:true}]
+])test(`live Gemini: rejects ${name}`,async t=>{
+ const p=await pageFor(t,'https://gemini.google.com/app');await liveGemini(p,settings);
+ await box(p,'Alte Notizen').check();await confirm(p);await status(p,/Angehalten|Fertig/);
+ assert.deepEqual(await p.evaluate(()=>window.deleted),[]);
+});
+test('live Gemini: stopping during delayed menu binding never opens the delete dialog',async t=>{
+ const p=await pageFor(t,'https://gemini.google.com/app');await liveGemini(p,{bindingDelay:1200});
+ await box(p,'Alte Notizen').check();await confirm(p);await p.getByRole('menu').waitFor();
+ await p.getByRole('button',{name:'Anhalten',exact:true}).click();await status(p,/Angehalten/);
+ assert.equal(await p.locator('dialog[data-live-gemini]').count(),0);assert.deepEqual(await p.evaluate(()=>window.deleted),[]);
+});
+test('live Gemini: changed target while waiting for menu binding never opens the delete dialog',async t=>{
+ const p=await pageFor(t,'https://gemini.google.com/app');await liveGemini(p,{bindingDelay:600});
+ await box(p,'Alte Notizen').check();await confirm(p);await p.getByRole('menu').waitFor();
+ await p.evaluate(()=>document.querySelector('[data-id$="0002"]').remove());await status(p,/Angehalten/);
+ assert.equal(await p.locator('dialog[data-live-gemini]').count(),0);assert.deepEqual(await p.evaluate(()=>window.deleted),[]);
+});
+test('live ChatGPT scope: explains excluded Codex tasks once per task and preserves chat selection',async t=>{
+ const p=await pageFor(t);await reportedChatGPT(p);await box(p,'Alte Notizen').check();
+ await p.evaluate(()=>{
+  for(let i=0;i<2;i++){const a=document.createElement('a');a.href='/remote/task_e_00000000000000000000000000000001';a.textContent='Codex-Beispiel';document.querySelector('#rows').append(a);}
+  const foreign=document.createElement('a');foreign.href='https://example.org/remote/task_e_00000000000000000000000000000002';foreign.textContent='Fremder Link';document.querySelector('#rows').append(foreign);
+ });
+ await p.getByText(/1 Codex-Aufgabe.*keine Checkbox/).waitFor();
+ assert.equal(await p.getByRole('checkbox',{name:/Chat auswählen:/}).count(),3);
+ assert.equal(await box(p,'Alte Notizen').isChecked(),true);assert.deepEqual(await p.evaluate(()=>window.deleted),[]);
+ await p.evaluate(()=>document.querySelectorAll('a[href^="/remote/"]').forEach(a=>a.remove()));
+ await p.getByText(/1 Codex-Aufgabe.*keine Checkbox/).waitFor({state:'hidden'});
+});
+test('live ChatGPT scope: explains a task-only sidebar without treating tasks as chats',async t=>{
+ const p=await pageFor(t);await reportedChatGPT(p);
+ await p.evaluate(()=>{
+  const rows=document.querySelector('#rows');rows.replaceChildren();
+  const a=document.createElement('a');a.href='/remote/task_e_00000000000000000000000000000001';a.textContent='Codex-Beispiel';rows.append(a);
+ });
+ await p.getByText(/1 Codex-Aufgabe.*keine Checkbox/).waitFor();
+ assert.equal(await p.getByRole('checkbox',{name:/Chat auswählen:/}).count(),0);
+ assert.equal(await p.getByRole('button',{name:'Auswahl löschen',exact:true}).isEnabled(),false);
+});
 async function confirm(p){await p.getByRole('button',{name:'Auswahl löschen',exact:true}).click();await p.getByRole('checkbox',{name:'Ich habe die Auswahl geprüft.'}).check();await p.getByRole('button',{name:/^\d+ Chats? endgültig löschen$/}).click();}
 async function status(p,re){await p.getByRole('status').filter({hasText:re}).waitFor({timeout:15000});}
 async function diagnosticReport(p){

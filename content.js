@@ -37,6 +37,7 @@
       el('h2',{text:'Chats auswählen'}),
       el('div',{id:'stats'},[el('span',{id:'number',text:'0'}),' ausgewählt',el('p',{id:'loaded',class:'muted'})]),
       el('p',{id:'hint',class:'muted'}),
+      el('p',{id:'unsupported',class:'muted',hidden:true}),
       el('details',{id:'scope'},[
         el('summary',{text:'Welche Chats werden erfasst?'}),
         el('p',{text:'Auch geladene Chats außerhalb des Bildschirms erhalten Checkboxen. Noch nicht geladene Chats erst nach dem Scrollen; neue Einträge bleiben zunächst abgewählt.'}),
@@ -70,6 +71,9 @@
   function update() {
     $('number').textContent = selected.size;
     $('loaded').textContent = `${chats.length} geladene Chats erkannt`;
+    const excludedWork = Core.excludedWorkCount();
+    $('unsupported').hidden = !excludedWork;
+    $('unsupported').textContent = `${excludedWork} Codex-Aufgabe${excludedWork === 1 ? ' in dieser Liste erhält' : 'n in dieser Liste erhalten'} keine Checkbox. Unterstützt werden normale Chats. Für eine reine Chatansicht im Verlaufsfilter „Chat“ wählen.`;
     $('hint').textContent = chats.length ? 'Chats links ankreuzen. Mit Umschalt + Klick einen Bereich auswählen.' : `Noch keine Chats erkannt. Öffne die ${provider.name}-Seitenleiste und deinen Verlauf. Nicht erkannte Einträge werden nicht gelöscht.`;
     const locked = busy || loading || reviewing;
     $('save-diagnostics').disabled = locked;

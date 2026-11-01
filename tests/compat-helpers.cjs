@@ -93,4 +93,42 @@ async function liveChatGPTDialog(page, settings={}) {
   }).observe(document.body,{childList:true,subtree:true});
  },settings);
 }
-module.exports={modernChatGPT,metadataGemini,reportedChatGPT,reportedGemini,liveChatGPTDialog};
+// Native Gemini dialog and delayed Angular menu binding, using synthetic IDs.
+async function liveGemini(page, settings={}) {
+ await reportedGemini(page);
+ await page.evaluate(settings=>{
+  options.english=true;
+  for(const button of document.querySelectorAll('gem-icon-button button')) {
+   const open=button.onclick;
+   button.onclick=event=>{
+    open(event);
+    document.querySelector('[role="menu"] [data-test-id="delete-button"]').setAttribute('jslog','186000;track:generic_click,impression;BardVeMetadataKey:'+btoa(JSON.stringify([[`c_${settings.menuId||button.closest('[data-id]').dataset.id}`]])));
+    const host=button.parentElement,controls=host.getAttribute('aria-controls');
+    if(settings.bindingDelay){host.removeAttribute('aria-controls');host.removeAttribute('aria-expanded');setTimeout(()=>{host.setAttribute('aria-controls',settings.foreignMenu?'foreign-menu':controls);host.setAttribute('aria-expanded','true');},settings.bindingDelay);}
+   };
+  }
+  new MutationObserver(()=>{
+   const dialog=document.querySelector('dialog');if(!dialog||dialog.dataset.liveGemini)return;
+   dialog.dataset.liveGemini='true';
+   const heading=dialog.querySelector('h2'),description=dialog.querySelector('p');
+   heading.textContent=settings.heading||'Delete chat?';
+   description.textContent=settings.description||'This will delete prompts, responses and feedback from your Gemini Apps activity, plus any content that you created.';
+   const help=document.createElement('a');help.href='https://support.google.com/gemini?p=deleted_chats';help.textContent='Learn more Opens in a new window';description.after(help);
+   for(const button of dialog.querySelectorAll('button')) {
+    const host=document.createElement('gem-button');button.replaceWith(host);host.append(button);
+    if(button.hasAttribute('data-test-id')) {
+     button.removeAttribute('data-test-id');button.removeAttribute('data-testid');
+     button.textContent=settings.confirmName||'Delete';
+     button.setAttribute('jslog',(settings.action||'186009')+';track:generic_click,impression;BardVeMetadataKey:'+(settings.invalidMetadata?'not-base64':btoa(JSON.stringify([settings.confirmIds||[`c_${settings.confirmId||'8000000000000002'}`]]))));
+     if(settings.missingMetadataKey)button.setAttribute('jslog','186009;other:"c_8000000000000002"');
+     if(settings.duplicateMetadataKey)button.setAttribute('jslog',button.getAttribute('jslog')+';BardVeMetadataKey:'+btoa(JSON.stringify([['c_8000000000000099']])));
+    } else {button.textContent=settings.cancelName||'Cancel';button.setAttribute('jslog','305700;track:generic_click,impression');}
+   }
+   if(settings.hiddenMetadata){
+    const confirm=dialog.querySelector('button[jslog^="186009"]'),hidden=confirm.cloneNode(true);
+    hidden.hidden=true;dialog.append(hidden);confirm.removeAttribute('jslog');confirm.setAttribute('data-test-id','confirm-button');
+   }
+  }).observe(document.body,{subtree:true,childList:true});
+ },settings);
+}
+module.exports={modernChatGPT,metadataGemini,reportedChatGPT,reportedGemini,liveChatGPTDialog,liveGemini};
