@@ -112,7 +112,7 @@
     for (let step = 0; step < 40 && Date.now() - started < 30000; step++) {
       check(signal);
       if (!visible(scroller) || !roots().some(root => root.contains(scroller))) throw new Error(t('errorListChanged'));
-      if (shown(dialogSelector).length || shown('[role="menu"]').length) throw new Error(t('errorCloseOverlays'));
+      if (confirmationDialogs().length || shown('[role="menu"]').length) throw new Error(t('errorCloseOverlays'));
       const beforeHeight = scroller.scrollHeight;
       const beforeCount = seen.size;
       scroller.scrollBy({top: Math.max(100, scroller.clientHeight * .85), behavior:'instant'});
@@ -156,6 +156,26 @@
     const elements = [...root.querySelectorAll(selector)].filter(visible);
     return elements.filter(el => !elements.some(other => other !== el && other.contains(el)));
   }
+  function neutralClaudeNotification(dialog) {
+    // Claude's success toast also has role=dialog. Identify its native,
+    // nonmodal notification structure without matching translated prose.
+    if (Provider.key !== 'claude' || !dialog.matches('[role="dialog"][aria-modal="false"][data-type="neutral"]') ||
+        dialog.matches('[data-cds="ConfirmationDialog"]')) return false;
+    const region = dialog.parentElement;
+    if (!region?.matches('[role="region"][aria-live="polite"][aria-atomic="false"][aria-relevant="additions text"]') ||
+        !region.parentElement?.matches('[data-cds="Toast"]') ||
+        !region.parentElement.parentElement?.matches('[data-cds-portal]') ||
+        !region.style.getPropertyValue('--toast-frontmost-height') || !dialog.style.getPropertyValue('--toast-index')) return false;
+    if (dialog.querySelector('[role="dialog"], [role="alertdialog"], [role="alert"], [data-cds="ConfirmationDialog"]')) return false;
+    const headings = dialog.querySelectorAll('h1, h2, h3, [role="heading"]');
+    if (headings.length !== 1 || !headings[0].matches('h2[data-type="neutral"][aria-atomic="true"]') ||
+        !headings[0].id || dialog.getAttribute('aria-labelledby') !== headings[0].id) return false;
+    const controls = dialog.querySelectorAll('button, [role="button"], a[href], input, select, textarea, form, [role="menuitem"], [contenteditable]');
+    if (controls.length !== 1 || !controls[0].matches('button[type="button"][data-type="neutral"][aria-hidden="true"]')) return false;
+    return !semanticDelete(controls[0], true) && !deleteNames.has(normal(controls[0].textContent)) &&
+      !deleteNames.has(normal(controls[0].getAttribute('aria-label')));
+  }
+  const confirmationDialogs = () => shown(dialogSelector).filter(dialog => !neutralClaudeNotification(dialog));
   function named(root, selector, names) {
     return shown(selector, root).filter(el => {
       const copy = el.cloneNode(true);
@@ -340,33 +360,10 @@
         [menuButton, controller].some(node => node.getAttribute('aria-expanded') === 'true')) await activateMenu(menuButton);
   }
 
-  async function settledClaudeDialog(item, target, signal, guard) {
-    // Claude can briefly expose overlapping confirmation shells. Never pick
-    // one while ambiguous: require the same unique dialog to settle first.
-    const end = Date.now() + 6000;
-    let candidate = null, uniqueSince = 0, ambiguous = false;
-    while (Date.now() < end) {
-      check(signal);
-      guard.verify();
-      assertBoundTarget(target, item);
-      const dialogs = shown(dialogSelector);
-      if (dialogs.some(node => dialogIdentityConflict(node, item))) {
-        throw new Error(t('errorDialogIdentity', item.title));
-      }
-      ambiguous = dialogs.length > 1;
-      if (dialogs.length === 1) {
-        if (candidate !== dialogs[0]) {candidate = dialogs[0];uniqueSince = Date.now();}
-        if (Date.now() - uniqueSince >= 300) return candidate;
-      } else {candidate = null;uniqueSince = 0;}
-      await delay(100);
-    }
-    throw new Error(t(ambiguous ? 'errorMultipleDialogs' : 'errorResultMissing'));
-  }
-
   async function deleteChat(item, signal, guard = createBatchGuard()) {
     check(signal);
     guard.verify();
-    if (shown(dialogSelector).length || shown('[role="menu"]').length) {
+    if (confirmationDialogs().length || shown('[role="menu"]').length) {
       throw new Error(t('errorProviderOverlays', Provider.name));
     }
     let target = assertTarget(item);
@@ -415,9 +412,9 @@
       const directTask = Provider.isTask(item.id), rootParent = target.root.parentElement;
       committed = directTask;
       remove[0].click();
-      dialog = Provider.key === 'claude' ? await settledClaudeDialog(item, target, signal, guard) : await waitFor(() => {
+      dialog = await waitFor(() => {
         guard.verify();
-        const dialogs = shown(dialogSelector);
+        const dialogs = confirmationDialogs();
         if (dialogs.length > 1) throw new Error(t('errorMultipleDialogs'));
         return dialogs[0] || (directTask && !listedIds().has(item.id) ? {removed:true} : null);
       }, t('errorResultMissing'), directTask ? null : signal);
@@ -426,7 +423,7 @@
         committed = false;
         await waitFor(() => {
           guard.verify();assertBoundTarget(target, item);
-          const dialogs = shown(dialogSelector);
+          const dialogs = confirmationDialogs();
           if (dialogs.length !== 1 || dialogs[0] !== dialog) throw new Error(t('errorDialogChanged'));
           if (dialogIdentityConflict(dialog, item)) throw new Error(t('errorDialogIdentity', item.title));
           const controls = shown('button, [role="button"]', dialog);
@@ -448,7 +445,7 @@
         check(signal);
         guard.verify();
         assertBoundTarget(target, item);
-        const currentDialogs = shown(dialogSelector);
+        const currentDialogs = confirmationDialogs();
         if (currentDialogs.length !== 1 || currentDialogs[0] !== dialog) throw new Error(t('errorDialogChanged'));
         committed = true;
         buttons[0].click();
@@ -458,7 +455,7 @@
       await waitFor(() => {
         guard.verify();
         const stillListed = listedIds().has(item.id);
-        if (visible(dialog) || shown(dialogSelector).length || stillListed || !target.root.isConnected ||
+        if (visible(dialog) || confirmationDialogs().length || stillListed || !target.root.isConnected ||
             target.root.parentElement !== rootParent || !visible(target.root)) { goneSince = 0; return false; }
         if (!goneSince) goneSince = Date.now();
         return Date.now() - goneSince >= 1200;

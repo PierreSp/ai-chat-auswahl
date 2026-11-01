@@ -1,6 +1,6 @@
 # Privacy policy
 
-Updated: November 1, 2026. Applies to ChatSweep 1.4.0. [Deutsch](PRIVACY.de.md).
+Updated: November 1, 2026. Applies to ChatSweep 1.4.1. [Deutsch](PRIVACY.de.md).
 
 Developer: Pierre Springer. Project and contact:
 [PierreSp/ai-chat-auswahl](https://github.com/PierreSp/ai-chat-auswahl).

@@ -1,4 +1,4 @@
-# Release verification — ChatSweep 1.4.0
+# Release verification — ChatSweep 1.4.1
 
 Date: 2026-11-01. Browser: the user's connected Chrome profile on Linux/Flatpak.
 Tests were performed through the visible websites, without using private APIs,
@@ -8,10 +8,10 @@ disposable test workflow were selected for deletion.
 ## Live scope
 
 Three ordinary saved chats, labelled `Store-Test 2026-11-01 A/B/C`, were created
-on each of ChatGPT, Claude and Gemini. One additional disposable Claude chat D
-was created to verify a dialog-transition correction. No existing user chat was
-selected or deleted. Native history groups containing existing chats were
-collapsed for screenshots.
+on each of ChatGPT, Claude and Gemini. Five additional disposable Claude chats
+D/E/F/G/H were created to investigate and verify the notification correction.
+No existing user chat was selected or deleted. Native history groups containing
+existing chats were collapsed for Store screenshots.
 
 | Check | ChatGPT | Claude | Gemini |
 | --- | --- | --- | --- |
@@ -20,43 +20,60 @@ collapsed for screenshots.
 | Cancel review preserves all three chats | Passed | Passed | Passed |
 | Stop A+B after first operation preserves B and C | Passed | Passed | Passed |
 | English 1.4.0 interface after extension reload | Passed | Passed | Passed |
-| Complete two-chat deletion | Passed B+C | Final C+D verification pending | Passed B+C |
-| Deleted test IDs absent from loaded native history after page reload | Passed A/B/C | Pending final verification | Passed A/B/C |
+| Complete two-chat deletion | Passed B+C | Passed G+H on 1.4.1 | Passed B+C |
+| Deleted test IDs absent from loaded native history after page reload | Passed A/B/C | Passed A–H | Passed A/B/C |
 
 The initial cancellation and Stop checks used the local 1.3.1 development build.
-English-interface and full-completion checks used 1.4.0. Neither 1.3.1 nor this
-pre-release 1.4.0 test build was a Chrome Web Store listing.
+English-interface and ChatGPT/Gemini completion checks used 1.4.0. Claude's final
+notification correction is in 1.4.1. The 1.3.1 and 1.4.0 development builds were
+not published releases or Chrome Web Store listings.
 
 ## Issue found during final testing
 
-Claude removed B, then safely stopped before C with “Multiple confirmation
-dialogs detected.” A subsequent DOM inspection showed one native confirmation
-dialog; the exact two elements present at the earlier instant were not captured.
-The remaining native dialog was cancelled without confirming deletion.
+Claude removed the first chat in each batch, then safely stopped before the
+second with “Multiple confirmation dialogs detected.” The remaining native
+confirmation was cancelled. The retained test chats were subsequently deleted
+in separately reviewed single-chat operations.
 
-An automated two-chat regression reproduced the same observable failure: the
-second operation stopped while overlapping dialog shells were temporarily
-present. The correction waits for one unchanged Claude confirmation dialog to
-remain unique for 300 ms, within a six-second limit. It continues checking the
-bound chat, explicit conflicting identities and batch errors. It never chooses
-a dialog while multiple candidates are visible. Persistent ambiguity, a changed
-target or Stop still prevents confirmation.
+DOM observations taken during a batch established the cause: Claude's neutral
+“Session deleted” notification also has `role="dialog"`. It remains present for
+several seconds while the next genuine `role="alertdialog"` confirmation opens.
+An earlier attempt to wait for a unique dialog did not resolve this live case
+and was removed.
 
-Six regression cases cover temporary and persistent overlap, Stop, changed
-targets, foreign IDs, and briefly unique dialogs followed by replacement.
+Version 1.4.1 distinguishes only the observed native neutral notification shape:
+a nonmodal dialog inside Claude's Toast component and live notification region,
+a linked neutral heading, and a single hidden-from-accessibility dismiss button.
+The predicate does not match translated notification prose. It does not click or
+dismiss notifications. Unknown, actionable, error/warning and genuine confirmation
+dialogs remain candidates and can block processing. The selected chat ID,
+confirmation identity and unique final confirmation checks are retained.
+
+Nine focused browser regression cases cover persistent and preexisting success
+notifications, localized text and ending animation, retained blocking overlays,
+foreign confirmation IDs, and notification-only responses that must not authorize
+a deletion. The positive batch test first failed against the previous code with
+only the first selected ID deleted, then passed with the structural correction.
+
+The final live G+H batch on 1.4.1 reported **2 of 2 removed from history. Done.**
+After reloading and expanding the native history, all eight Claude test IDs were
+absent; the two preexisting history entries remained. Across all three providers,
+all **14** newly created disposable chats were cleaned up. Test tabs were closed
+and the native history groups used for screenshots were restored.
 
 ## Automated verification
 
-The final `npm test` run completed successfully: **149 tests passed, zero failed,
-zero skipped** (254 seconds). The six focused Claude transition tests also
-passed separately. They first reproduced the bug against the earlier code:
-the second selected chat was retained instead of the batch completing.
+The final 1.4.1 `npm test` run passed **152 tests, zero failed, zero skipped**
+(249 seconds). The nine focused notification tests also passed separately.
+The previous 1.4.0 suite passed 149 tests but did not reproduce the real native
+toast structure; the speculative transition cases were replaced by the observed
+notification regression cases.
 
 Locale tests cover English, German and fallback from another browser language,
 localized popup messages, and an English extension acting on German native
 controls. Title identity checks and literal text handling remain enforced.
-Distribution archives were checked against the explicit 20-file allowlist and
-source bytes; Store screenshot dimensions were checked separately.
+Distribution archives are checked against the explicit 20-file allowlist and
+source bytes; Store screenshot dimensions are checked separately.
 
 ## Limits
 

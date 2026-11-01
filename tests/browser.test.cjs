@@ -2,7 +2,7 @@ const {test,before,after}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');const path=require('node:path');const os=require('node:os');
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
-const {modernChatGPT,metadataGemini,reportedChatGPT,reportedGemini,liveChatGPTDialog,liveGemini,codexTasks,stagedGeminiDialog,overlappingClaudeDialogs}=require('./compat-helpers.cjs');
+const {modernChatGPT,metadataGemini,reportedChatGPT,reportedGemini,liveChatGPTDialog,liveGemini,codexTasks,stagedGeminiDialog,claudeNotificationToast}=require('./compat-helpers.cjs');
 const extension=path.resolve(__dirname,'..');const fixture=fs.readFileSync(path.join(__dirname,'fixture.html'),'utf8');
 let context,profile;
 before(async()=>{profile=fs.mkdtempSync(path.join(os.tmpdir(),'chat-cleaner-test-'));context=await chromium.launchPersistentContext(profile,{channel:'chromium',executablePath:process.env.CHROMIUM_PATH,headless:true,locale:'de-DE',env:{...process.env,LANG:'de_DE.UTF-8',LANGUAGE:'de_DE'},args:['--lang=de-DE',`--disable-extensions-except=${extension}`,`--load-extension=${extension}`]});await context.route('**/*',r=>['chatgpt.com','claude.ai','gemini.google.com'].includes(new URL(r.request().url()).hostname)?r.fulfill({contentType:'text/html',headers:r.request().url().includes('tt=1')?{'Content-Security-Policy':"require-trusted-types-for 'script'"}:{},body:fixture}):r.abort());});
@@ -348,37 +348,40 @@ test('compat: Claude exact reported session dialog succeeds',async t=>{
  await box(p,'Alte Notizen').check();await confirm(p);await status(p,/Angehalten|Fertig/);
  assert.deepEqual(await p.evaluate(()=>window.deleted),['00000000-0000-4000-8000-000000000002']);
 });
-test('Claude dialog transition: transient overlap settles before confirming the second selected chat',async t=>{
- const p=await pageFor(t,'https://claude.ai/');await overlappingClaudeDialogs(p);
+test('Claude notification toast: persistent success notifications do not block a two-chat batch',async t=>{
+ const p=await pageFor(t,'https://claude.ai/');await claudeNotificationToast(p);
  await box(p,'Urlaub planen').check();await box(p,'Alte Notizen').check();await confirm(p);await status(p,/Angehalten|Fertig/);
  assert.deepEqual(await p.evaluate(()=>window.deleted),['00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000002']);
- assert.deepEqual(await p.evaluate(()=>window.nativeConfirmations.map(({count,phase})=>({count,phase}))),[{count:1,phase:'settled'},{count:1,phase:'settled'}]);
- assert.equal(await p.locator('#rows .row').count(),1);
+ assert.equal(await p.locator('[data-cds="Toast"] [role="dialog"]').count(),2);assert.equal(await p.locator('#rows .row').count(),1);
+ assert.deepEqual(await p.evaluate(()=>window.notificationActions),[]);
 });
-test('Claude dialog transition: persistent ambiguity never confirms either dialog or advances the queue',async t=>{
- const p=await pageFor(t,'https://claude.ai/');await overlappingClaudeDialogs(p,{overlapAt:1,mode:'persistent'});
- await box(p,'Urlaub planen').check();await box(p,'Alte Notizen').check();await confirm(p);await status(p,/Angehalten/);
- assert.deepEqual(await p.evaluate(()=>window.deleted),[]);assert.deepEqual(await p.evaluate(()=>window.nativeConfirmations),[]);
- assert.equal(await p.evaluate(()=>window.nativeDialogOpens),1);assert.equal(await p.locator('#rows .row').count(),3);
-});
-test('Claude dialog transition: Stop during overlap prevents native confirmation',async t=>{
- const p=await pageFor(t,'https://claude.ai/');await overlappingClaudeDialogs(p,{overlapAt:1,mode:'persistent'});
- await box(p,'Alte Notizen').check();await confirm(p);
- await p.waitForFunction(()=>document.querySelectorAll('[role="alertdialog"]').length===2);
- await p.getByRole('button',{name:'Anhalten',exact:true}).click();await status(p,/Angehalten/);
- assert.deepEqual(await p.evaluate(()=>window.deleted),[]);assert.deepEqual(await p.evaluate(()=>window.nativeConfirmations),[]);
-});
-for(const mode of ['changed-target','foreign-id'])test(`Claude dialog transition: ${mode} stops before any confirmation`,async t=>{
- const p=await pageFor(t,'https://claude.ai/');await overlappingClaudeDialogs(p,{overlapAt:1,mode});
- await box(p,'Alte Notizen').check();await confirm(p);await status(p,/Angehalten/);
- assert.deepEqual(await p.evaluate(()=>window.deleted),[]);assert.deepEqual(await p.evaluate(()=>window.nativeConfirmations),[]);
- assert.equal(await p.locator('#rows .row').count(),3);
-});
-test('Claude dialog transition: brief uniqueness and replacement do not bypass settling',async t=>{
- const p=await pageFor(t,'https://claude.ai/');await overlappingClaudeDialogs(p,{overlapAt:1,mode:'unstable'});
+test('Claude notification toast: a preexisting localized neutral notification does not block deletion',async t=>{
+ const p=await pageFor(t,'https://claude.ai/');await claudeNotificationToast(p,{preexisting:true,text:'Sitzung gelöscht',afterDeletion:false});
+ // Claude removes this property during its ending animation; identity comes
+ // from the remaining native notification structure, not rendered height.
+ await p.evaluate(()=>document.querySelector('[data-cds="Toast"] [role="dialog"]').style.removeProperty('--toast-height'));
  await box(p,'Alte Notizen').check();await confirm(p);await status(p,/Angehalten|Fertig/);
  assert.deepEqual(await p.evaluate(()=>window.deleted),['00000000-0000-4000-8000-000000000002']);
- assert.deepEqual(await p.evaluate(()=>window.nativeConfirmations.map(({count,phase})=>({count,phase}))),[{count:1,phase:'settled'}]);
+ assert.equal(await p.locator('[data-cds="Toast"] [role="dialog"]').count(),1);assert.deepEqual(await p.evaluate(()=>window.notificationActions),[]);
+});
+for(const variant of ['unknown-nonmodal','error','warning','actionable','confirmation'])test(`Claude notification toast: ${variant} dialog is retained as a blocking overlay`,async t=>{
+ const p=await pageFor(t,'https://claude.ai/');await claudeNotificationToast(p,{preexisting:true,variant});
+ await box(p,'Alte Notizen').check();await confirm(p);await status(p,/Angehalten/);
+ assert.deepEqual(await p.evaluate(()=>window.deleted),[]);assert.equal(await p.evaluate(()=>window.nativeMenuDeletes),0);
+ assert.deepEqual(await p.evaluate(()=>window.notificationActions),[]);
+});
+test('Claude notification toast: ignoring a success notification cannot override a foreign confirmation ID',async t=>{
+ const p=await pageFor(t,'https://claude.ai/');await claudeNotificationToast(p,{preexisting:true,afterDeletion:false});
+ await p.evaluate(()=>options.dialogId='00000000-0000-4000-8000-000000000099');
+ await box(p,'Alte Notizen').check();await confirm(p);await status(p,/Angehalten/);
+ assert.deepEqual(await p.evaluate(()=>window.deleted),[]);assert.equal(await p.evaluate(()=>window.nativeMenuDeletes),1);
+ assert.deepEqual(await p.evaluate(()=>window.notificationActions),[]);
+});
+test('Claude notification toast: a notification alone never authorizes deletion or advances the queue',async t=>{
+ const p=await pageFor(t,'https://claude.ai/');await claudeNotificationToast(p,{toastOnly:true});
+ await box(p,'Urlaub planen').check();await box(p,'Alte Notizen').check();await confirm(p);await status(p,/Angehalten/);
+ assert.deepEqual(await p.evaluate(()=>window.deleted),[]);assert.equal(await p.evaluate(()=>window.nativeMenuDeletes),1);
+ assert.equal(await p.locator('#rows .row').count(),3);assert.deepEqual(await p.evaluate(()=>window.notificationActions),[]);
 });
 for(const [language,menuName,heading,plainDialog,cancelName] of [
  ['French','Supprimer','Supprimer la session ?','Cette session sera définitivement supprimée. Cette action est irréversible.','Annuler'],

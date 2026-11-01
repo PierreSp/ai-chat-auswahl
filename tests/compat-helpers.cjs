@@ -186,52 +186,52 @@ async function stagedGeminiDialog(page, mode, settings={}) {
   }
  },{mode,settings});
 }
-// Claude can briefly render two native confirmation shells during a transition.
-// Keep both actionable so choosing either while ambiguous is observable.
-async function overlappingClaudeDialogs(page, settings={}) {
+// Claude's observed success notification has role=dialog but no confirmation
+// action. Reproduce its native structure using synthetic text and identifiers.
+async function claudeNotificationToast(page, settings={}) {
  await page.evaluate(settings=>{
-  window.nativeConfirmations=[];window.nativeDialogOpens=0;
+  window.notificationActions=[];window.nativeMenuDeletes=0;
+  const portal=document.createElement('div');portal.setAttribute('data-cds-portal','');
+  const stack=document.createElement('div');stack.setAttribute('data-cds','Toast');stack.style.cssText='position:fixed;right:16px;bottom:16px;width:360px;z-index:9000';
+  const region=document.createElement('div');
+  for(const [name,value] of Object.entries({tabindex:'-1',role:'region','aria-live':'polite','aria-atomic':'false','aria-relevant':'additions text','aria-label':'Notifications'}))region.setAttribute(name,value);
+  region.style.cssText='--toast-frontmost-height:44px;height:44px';
+  portal.append(stack);stack.append(region);document.body.append(portal);
+  let sequence=0;
+  const notify=()=>{
+   const dialog=document.createElement('div');
+   for(const [name,value] of Object.entries({'data-type':'neutral',role:'dialog',tabindex:'0','aria-modal':'false'}))dialog.setAttribute(name,value);
+   dialog.style.cssText=`--toast-swipe-movement-x:0px;--toast-swipe-movement-y:0px;--toast-index:${sequence};--toast-offset-y:0px;--toast-height:44px;position:relative;z-index:1`;
+   const card=document.createElement('div'),body=document.createElement('div'),icon=document.createElement('span'),label=document.createElement('div');
+   icon.setAttribute('data-cds','Icon');icon.setAttribute('aria-hidden','true');icon.textContent='✓';
+   const heading=document.createElement('h2');heading.setAttribute('data-type','neutral');heading.setAttribute('aria-atomic','true');heading.id=`fixture-notification-${++sequence}`;
+   const title=document.createElement('span');title.textContent=settings.text||'Session deleted';heading.append(title);label.append(heading);dialog.setAttribute('aria-labelledby',heading.id);
+   const dismiss=document.createElement('button');
+   for(const [name,value] of Object.entries({type:'button','data-type':'neutral',tabindex:'0','aria-hidden':'true','aria-label':'Dismiss'}))dismiss.setAttribute(name,value);
+   const closeIcon=document.createElement('span');closeIcon.setAttribute('data-cds','Icon');closeIcon.setAttribute('aria-hidden','true');closeIcon.textContent='×';dismiss.append(closeIcon);
+   dismiss.onclick=()=>{notificationActions.push('dismiss');dialog.remove();};
+   body.append(icon,label,dismiss);card.append(body);dialog.append(card);region.append(dialog);
+   if(settings.variant==='unknown-nonmodal'){stack.removeAttribute('data-cds');dialog.removeAttribute('data-type');dialog.removeAttribute('style');heading.removeAttribute('data-type');}
+   if(['error','warning'].includes(settings.variant)){dialog.setAttribute('data-type',settings.variant);heading.setAttribute('data-type',settings.variant);}
+   if(settings.variant==='actionable'){
+    const action=document.createElement('button');action.textContent='Delete';action.className='bg-danger-000';action.onclick=()=>notificationActions.push('delete');body.append(action);
+   }
+   if(settings.variant==='confirmation')dialog.setAttribute('data-cds','ConfirmationDialog');
+  };
+  if(settings.preexisting)notify();
   for(const more of document.querySelectorAll('#rows .row button')) {
    const open=more.onclick;
    more.onclick=event=>{
     open(event);
-    const row=more.closest('.row'),id=row.dataset.id;
-    const menu=document.querySelector('[role="menu"]');
-    menu.querySelector('[role="menuitem"]').onclick=()=>{
-     menu.remove();more.setAttribute('aria-expanded','false');
-     const overlap=++window.nativeDialogOpens===(settings.overlapAt??2);
-     let phase=overlap?'overlap':'settled';
-     const makeDialog=foreign=>{
-      const dialog=document.createElement('div');
-      dialog.setAttribute('role','alertdialog');dialog.setAttribute('data-cds','ConfirmationDialog');dialog.setAttribute('data-open','');
-      dialog.style.cssText=`position:fixed;left:${foreign?650:300}px;top:100px;width:300px;padding:20px;background:white`;
-      const heading=document.createElement('h2');heading.textContent='Delete session?';
-      const description=document.createElement('p');description.textContent='This session will be permanently deleted. This can’t be undone.';
-      const cancel=document.createElement('button');cancel.textContent='Cancel';cancel.onclick=()=>dialog.remove();
-      const confirm=document.createElement('button');confirm.textContent='Delete';confirm.className='bg-danger-000';
-      confirm.onclick=()=>{
-       const count=[...document.querySelectorAll('[role="alertdialog"]')].filter(el=>el.isConnected&&el.getClientRects().length&&getComputedStyle(el).visibility!=='hidden').length;
-       nativeConfirmations.push({id:foreign?'foreign-confirmation':id,count,phase});
-       deleted.push(foreign?'foreign-confirmation':id);if(!foreign)row.remove();dialog.remove();
-      };
-      dialog.append(heading,description,cancel,confirm);return dialog;
-     };
-     let primary=makeDialog(false);document.body.append(primary);
-     if(!overlap)return;
-     const duplicate=makeDialog(true);
-     if(settings.mode==='foreign-id')duplicate.setAttribute('data-conversation-id','00000000-0000-4000-8000-000000000099');
-     document.body.append(duplicate);
-     if(settings.mode==='persistent')return;
-     if(settings.mode==='changed-target')setTimeout(()=>{row.querySelector('a span').textContent='Changed during transition';},150);
-     if(settings.mode==='unstable'){
-      setTimeout(()=>duplicate.remove(),150);
-      setTimeout(()=>document.body.append(duplicate),250);
-      setTimeout(()=>{const replacement=makeDialog(false);primary.replaceWith(replacement);primary=replacement;},350);
-     }
-     setTimeout(()=>{phase='settled';duplicate.remove();},settings.delay??550);
+    const menu=document.querySelector('[role="menu"]'),remove=menu.querySelector('[role="menuitem"]'),nativeDelete=remove.onclick;
+    remove.onclick=()=>{
+     window.nativeMenuDeletes++;
+     if(settings.toastOnly){menu.remove();more.setAttribute('aria-expanded','false');notify();return;}
+     nativeDelete();const dialog=document.querySelector('dialog'),confirm=dialog.querySelector('[data-testid="delete-conversation-confirm-button"]'),nativeConfirm=confirm.onclick;
+     confirm.onclick=()=>{nativeConfirm();if(!dialog.isConnected&&settings.afterDeletion!==false)notify();};
     };
    };
   }
  },settings);
 }
-module.exports={modernChatGPT,metadataGemini,reportedChatGPT,reportedGemini,liveChatGPTDialog,liveGemini,codexTasks,stagedGeminiDialog,overlappingClaudeDialogs};
+module.exports={modernChatGPT,metadataGemini,reportedChatGPT,reportedGemini,liveChatGPTDialog,liveGemini,codexTasks,stagedGeminiDialog,claudeNotificationToast};

@@ -6,7 +6,7 @@ Select, review and bulk delete conversations in ChatGPT, Claude and Gemini.
 ChatSweep adds checkboxes to your chat history so you can clean up several
 conversations in one go. Codex tasks in ChatGPT's history are supported too.
 
-**Version 1.4.0 · Public beta · GPL-3.0**
+**Version 1.4.1 · Public beta · GPL-3.0**
 
 Previously called AI Chat-Auswahl. [Deutsche Anleitung](README.de.md).
 
@@ -16,7 +16,7 @@ Real extension screenshot, showing only chats created for testing.
 
 ## Install
 
-1. [Download ChatSweep 1.4.0](https://github.com/PierreSp/ai-chat-auswahl/releases/download/v1.4.0/chatsweep-1.4.0.zip) and unzip it.
+1. [Download ChatSweep 1.4.1](https://github.com/PierreSp/ai-chat-auswahl/releases/download/v1.4.1/chatsweep-1.4.1.zip) and unzip it.
 2. Open `chrome://extensions` in Chrome and enable **Developer mode**.
 3. Choose **Load unpacked** and select the `chatsweep` folder containing `manifest.json`.
 4. Keep that folder in place. Reload the supported websites and open **Clean up chats**.
@@ -84,8 +84,8 @@ To create the distribution archives, also install Python 3 and run:
 npm run package
 ```
 
-`dist/chatsweep-1.4.0.zip` is for manual installation;
-`dist/chatsweep-1.4.0-webstore.zip` has its manifest at the archive root for Store
+`dist/chatsweep-1.4.1.zip` is for manual installation;
+`dist/chatsweep-1.4.1-webstore.zip` has its manifest at the archive root for Store
 submission. Each has a SHA-256 checksum. Both contain the same readable extension
 sources, icons, translations, license and user documentation. Development tools
 and test data are excluded.

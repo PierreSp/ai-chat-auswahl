@@ -1,6 +1,6 @@
 # Chrome Web Store: Einreichung vorbereiten
 
-Stand: 1. November 2026. **ChatSweep 1.4.0** ist für Englisch und Deutsch
+Stand: 1. November 2026. **ChatSweep 1.4.1** ist für Englisch und Deutsch
 vorbereitet. Eine Store-Einreichung wurde noch nicht vorgenommen.
 
 ## Fertige Materialien
@@ -12,8 +12,8 @@ vorbereitet. Eine Store-Einreichung wurde noch nicht vorgenommen.
 - Kleine Werbekachel, 440 × 280: [Englisch](../store/assets/promo-small-en-440x280.png) / [Deutsch](../store/assets/promo-small-440x280.png)
 - [Echte Screenshots und Upload-Reihenfolge](../store/screenshots/README.md)
 - [Live-Testbericht und Grenzen](../store/live-test-report.md)
-- Upload-Materialien gesammelt: `dist/chatsweep-1.4.0-store-assets.zip`
-- Paket: `dist/chatsweep-1.4.0-webstore.zip`, Manifest direkt an der Archivwurzel
+- Upload-Materialien gesammelt: `dist/chatsweep-1.4.1-store-assets.zip`
+- Paket: `dist/chatsweep-1.4.1-webstore.zip`, Manifest direkt an der Archivwurzel
 - Homepage: https://github.com/PierreSp/ai-chat-auswahl
 - Support: https://github.com/PierreSp/ai-chat-auswahl/issues
 - Privacy policy: https://github.com/PierreSp/ai-chat-auswahl/blob/main/PRIVACY.md
@@ -48,7 +48,7 @@ GitHub, die Erweiterung oder diese Anleitung.
 
 ## Eintrag anlegen
 
-1. **Add new item** wählen und `chatsweep-1.4.0-webstore.zip` hochladen.
+1. **Add new item** wählen und `chatsweep-1.4.1-webstore.zip` hochladen.
 2. Die englische Beschreibung als Standard eintragen und Deutsch ergänzen.
 3. Die passende Produktivitäts-/Werkzeugkategorie im aktuellen Dashboard wählen.
 4. Icon und Screenshots hochladen; optional die vorbereitete Werbekachel verwenden.
@@ -109,7 +109,7 @@ Mindestens ein Screenshot und ein Store-Icon sind erforderlich. Screenshots:
 94 Pixeln und einen transparenten Rand. Die kleine Werbekachel 440 × 280 ist
 optional. Keine privaten Chatlisten oder Kontaktdaten in Store-Bildern verwenden.
 
-Versions-Tag und Manifestversion zusammen führen, z. B. `v1.4.0` und `1.4.0`.
+Versions-Tag und Manifestversion zusammen führen, z. B. `v1.4.1` und `1.4.1`.
 GitHub-Themen: `chrome-extension`, `chatgpt`, `claude`, `gemini`, `chat-management`.
 Im Store den Nutzen natürlich beschreiben; keine wiederholten Keywordlisten und
 keine irreführende Anbieterzugehörigkeit.

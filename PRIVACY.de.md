@@ -1,6 +1,6 @@
 # Datenschutz
 
-Stand: 1. November 2026, Version 1.4.0.
+Stand: 1. November 2026, Version 1.4.1.
 
 Entwickler: Pierre Springer. Projekt und Kontaktmöglichkeit:
 [PierreSp/ai-chat-auswahl](https://github.com/PierreSp/ai-chat-auswahl).

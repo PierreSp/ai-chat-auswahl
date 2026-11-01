@@ -1,7 +1,8 @@
 # Store screenshots
 
 Captured on 2026-11-01 from the real ChatSweep 1.4.0 extension in signed-in
-Chrome tabs. All visible conversations were created for this disposable test
+Chrome tabs. The displayed UI is unchanged in 1.4.1; that patch corrects native
+Claude notification handling. All visible conversations were created for this disposable test
 workflow. Existing history was collapsed before capture. No email address,
 private chat title or personal chat content is included.
 

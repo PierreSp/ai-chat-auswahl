@@ -1,14 +1,15 @@
 # Änderungen
 
-## 1.4.0 — 2026-11-01
+## 1.4.1 — 2026-11-01
 
 - Neuer Name: **ChatSweep – Chats gesammelt löschen**.
 - Englisch als Standardsprache, vollständige deutsche Übersetzung; Sprache folgt Chrome.
 - Neues Icon und Store-Werbekachel; Name und Kurzbeschreibung überarbeitet.
 - Live-Prüfungen mit eigens angelegten Testchats und echte Store-Screenshots in `store/` dokumentiert.
-- Claude: kurz überlappende Bestätigungsdialoge erhalten Zeit zum Stabilisieren;
-  anhaltende Mehrdeutigkeit, widersprüchliche Identitäten und geänderte Ziele
-  stoppen weiterhin ohne Bestätigung. Sechs gezielte Regressionstests ergänzt.
+- Claude: native neutrale Erfolgsmeldungen werden strukturell von echten
+  Bestätigungsdialogen unterschieden. Zusätzliche Bestätigungen, Fehler,
+  widersprüchliche Identitäten und geänderte Ziele stoppen weiterhin sicher.
+- Die lokalen Entwicklungsstände 1.3.1 und 1.4.0 wurden nicht veröffentlicht.
 
 ## 1.3.0 — 2026-11-01
 

@@ -1,9 +1,9 @@
-CHATSWEEP — Version 1.4.0 (public beta)
+CHATSWEEP — Version 1.4.1 (public beta)
 Fewer chats. More clarity.
 For ChatGPT, Claude and Gemini in Chrome.
 
 INSTALL
-1. Unzip chatsweep-1.4.0.zip.
+1. Unzip chatsweep-1.4.1.zip.
 2. Open chrome://extensions and enable Developer mode.
 3. Choose Load unpacked and select the chatsweep folder containing manifest.json.
 4. Keep that folder in place. Reload ChatGPT, Claude or Gemini.

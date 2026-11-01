@@ -3,7 +3,7 @@
 **Weniger Chats. Mehr Überblick.**
 
 Früher „AI Chat-Auswahl“. [English](README.md) · Chrome-Erweiterung zum Auswählen und gemeinsamen Löschen von Chats bei **ChatGPT,
-Claude und Gemini**. Version **1.4.0**, öffentliche Beta.
+Claude und Gemini**. Version **1.4.1**, öffentliche Beta.
 
 Die Erweiterung ergänzt Checkboxen in der Verlaufsseitenleiste. Vor dem Löschen
 prüfst du die vollständige Auswahl. Auch Codex-Aufgaben im ChatGPT-Verlauf sind
@@ -24,7 +24,7 @@ Die Erweiterung hält bei uneindeutigen IDs, Menüs oder Dialogen an.
 
 ## Installation
 
-1. [ChatSweep 1.4.0 herunterladen](https://github.com/PierreSp/ai-chat-auswahl/releases/download/v1.4.0/chatsweep-1.4.0.zip) und entpacken.
+1. [ChatSweep 1.4.1 herunterladen](https://github.com/PierreSp/ai-chat-auswahl/releases/download/v1.4.1/chatsweep-1.4.1.zip) und entpacken.
 2. In Chrome `chrome://extensions` öffnen und **Entwicklermodus** einschalten.
 3. **Entpackte Erweiterung laden** wählen und den Ordner `chatsweep` mit
    `manifest.json` auswählen. Diesen Ordner anschließend an seinem Platz lassen.
@@ -95,10 +95,10 @@ Für das Release-Archiv wird zusätzlich Python 3 benötigt:
 npm run package
 ```
 
-Das erzeugt `dist/chatsweep-1.4.0.zip` und eine SHA-256-Prüfsumme. Das Archiv
+Das erzeugt `dist/chatsweep-1.4.1.zip` und eine SHA-256-Prüfsumme. Das Archiv
 enthält den direkt ausführbaren Erweiterungsquellcode, Bedienung und Lizenz.
 Entwicklungswerkzeuge, Testdaten und Git-Verlauf werden nicht mitgepackt.
-Zusätzlich entsteht `dist/chatsweep-1.4.0-webstore.zip` mit `manifest.json`
+Zusätzlich entsteht `dist/chatsweep-1.4.1-webstore.zip` mit `manifest.json`
 direkt im Archivwurzelverzeichnis für den Store-Upload. Die
 [Store-Vorbereitung](docs/chrome-web-store.md) beschreibt die noch offenen Schritte.
 Hinweise zur [Erkennungsbasis](docs/recognition-sources.txt) liegen im Repository.
