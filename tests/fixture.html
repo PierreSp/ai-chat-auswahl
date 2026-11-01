@@ -1,0 +1,34 @@
+<!doctype html><html lang="de"><meta charset="utf-8"><title>Chat-Auswahl Testumgebung</title>
+<style>
+body{margin:0;font:16px system-ui;background:#f7f7f5;color:#242923}nav{width:270px;height:100vh;overflow:auto;background:#ebede8;padding:24px;box-sizing:border-box}nav h2{font-size:14px;color:#747b70;margin:30px 0 12px}a{color:inherit;text-decoration:none}.row{position:relative;display:flex;align-items:center;margin:6px 0;border-radius:8px;min-height:44px}.row>a{display:flex;align-items:center;flex:1;min-height:44px;min-width:0;padding:0 10px;box-sizing:border-box}.row>a span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.row:hover{background:#dce1d7}button{cursor:pointer} .row button{border:0;background:transparent;padding:8px}main{position:absolute;left:340px;top:90px;max-width:530px}main h1{font:40px Georgia}main p{line-height:1.7;color:#66705f}[role=menu]{position:fixed;top:150px;left:260px;background:white;border:1px solid #ccc;padding:12px;z-index:1000}[role=menuitem]{display:block;padding:12px}dialog{border:1px solid #ccc;border-radius:12px;padding:26px;min-width:300px}dialog button{padding:10px;margin-right:10px}
+</style>
+<nav aria-label="Chat history" id="history"><b>ChatGPT</b><h2>Deine Chats</h2><div id="rows"></div></nav>
+<main><h1>Ein bisschen mehr Übersicht.</h1><p>Lokale Testumgebung mit Beispielchats. Hier werden keine echten Unterhaltungen verändert.</p><a href="/c/00000000-0000-4000-8000-000000000099">Verlinkter Chat im Inhalt</a></main>
+<script>
+window.provider=location.hostname==='claude.ai'?'Claude':location.hostname==='gemini.google.com'?'Gemini':'ChatGPT';
+document.querySelector('nav>b').textContent=provider;
+if(provider==='Claude'){document.querySelector('nav').id='claude-sidebar';document.querySelector('nav').setAttribute('aria-label','Sidebar');}
+if(provider==='Gemini'){document.querySelector('nav').id='gemini-sidebar';document.querySelector('nav').setAttribute('aria-label','Side Navigation');document.querySelector('#rows').className='chat-history-list';}
+window.deleted=[];window.options={};window.addChat=(id,title,variant='sibling')=>{
+ if(provider==='Gemini'){id=id.replaceAll('-','').slice(-16);if(location.search.includes('legacy=1'))variant='legacy';}
+ const row=document.createElement(provider==='Gemini'&&variant!=='legacy'?'gem-nav-list-item':'div');row.className='row';row.dataset.id=id;
+ if(provider==='Gemini'){row.setAttribute('data-test-id','conversation');if(variant==='legacy')row.id='c_'+id;}
+ const a=document.createElement(variant==='legacy'?'div':'a');a.href=(provider==='Claude'?'/chat/':provider==='Gemini'?'/app/':'/c/')+id;const name=document.createElement('span');if(provider==='Gemini')name.className='conversation-title';name.textContent=title;a.append(name);
+ const more=document.createElement('button');more.setAttribute('aria-haspopup','menu');more.setAttribute('aria-label','Gesprächsoptionen öffnen');more.textContent='⋯';if(provider==='Gemini')more.setAttribute('data-test-id','actions-menu-button');
+ if(variant==='nested')a.append(more);row.append(a);if(variant!=='nested')row.append(more);
+ more.onclick=e=>{e.preventDefault();e.stopPropagation();if(options.redirectMenu&&id.endsWith('001')){document.querySelector('[data-id$=\"002\"] button').click();return;}const controller=more.closest('gem-icon-button[data-test-id="actions-menu-button"]')||more;const menu=document.createElement('div');menu.setAttribute('role','menu');menu.id='menu-'+id;if(!options.noControls)controller.setAttribute('aria-controls',menu.id);controller.setAttribute('aria-expanded','true');if(options.hideBackground)document.querySelector('nav').setAttribute('aria-hidden','true');
+ const del=document.createElement('button');del.setAttribute('role','menuitem');if(options.disabledMenu)del.setAttribute('aria-disabled','true');del.textContent=options.menuName||(options.english?'Delete':'Löschen');if(options.semanticDelete)del.className='text-danger-000';if(provider==='Gemini'){del.setAttribute('data-test-id','delete-button');const icon=document.createElement('mat-icon');icon.textContent='delete';del.prepend(icon);}
+ del.onclick=()=>{menu.remove();controller.setAttribute('aria-expanded','false');const dialog=document.createElement('dialog');
+ const h=document.createElement('h2');h.textContent=options.english?'Delete chat?':'Chat löschen?';const p=document.createElement('p');p.textContent=options.english?'This will delete ':'Dadurch wird folgender Chat gelöscht: ';const strong=document.createElement('strong');strong.textContent=options.wrongTitle||title;if(provider==='ChatGPT'||options.wrongTitle||options.includeTitle)p.append(strong);else p.textContent='This will permanently delete this chat. This cannot be undone.';
+ if(options.plainDialog)p.textContent=options.plainDialog;if(options.dialogId)dialog.setAttribute('data-conversation-id',options.dialogId);const yes=document.createElement('button');yes.textContent=options.english?'Delete':'Löschen';yes.dataset.testid='delete-conversation-confirm-button';if(provider==='Gemini')yes.setAttribute('data-test-id','confirm-button');if(options.buttonSpan){const span=document.createElement('span');span.textContent=yes.textContent;yes.replaceChildren(span);}const no=document.createElement('button');no.textContent=options.english?'Cancel':'Abbrechen';no.onclick=()=>{dialog.remove();document.querySelector('nav').removeAttribute('aria-hidden');};yes.onclick=()=>{if(options.failure){const alert=document.createElement('p');alert.setAttribute('role','alert');alert.textContent='Serverfehler';dialog.append(alert);return;}window.deleted.push(id);row.remove();if(options.rollback&&id.endsWith('001'))setTimeout(()=>{document.querySelector('#rows').prepend(row);if(!options.silentRollback){const alert=document.createElement('p');alert.setAttribute('role','alert');alert.textContent='Serverfehler';document.body.append(alert);}},1300);dialog.remove();document.querySelector('nav').removeAttribute('aria-hidden');};
+ if(options.heading)h.textContent=options.heading;
+ if(options.confirmName)yes.textContent=options.confirmName;
+ if(options.cancelName)no.textContent=options.cancelName;
+ if(options.semanticDelete){delete yes.dataset.testid;yes.className='bg-danger-000';}
+ if(options.noConfirmMarker){delete yes.dataset.testid;yes.className='';}
+ if(options.recycleAtDialog)a.href='/c/00000000-0000-4000-8000-000000000088';dialog.append(h,p,no,yes);document.body.append(dialog);if(!options.noDialog)dialog.showModal();};menu.append(del);document.body.append(menu);};document.querySelector('#rows').append(row);
+};
+addChat('00000000-0000-4000-8000-000000000001','Urlaub planen');
+addChat('00000000-0000-4000-8000-000000000002','Alte Notizen','nested');
+addChat('00000000-0000-4000-8000-000000000003','Behalten: Projektideen');
+</script></html>

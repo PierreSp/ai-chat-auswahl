@@ -1,0 +1,372 @@
+/* Runs only in the extension's isolated content-script world. No network calls. */
+(() => {
+  'use strict';
+  const Provider = globalThis.ChatCleanerProvider;
+  if (!Provider) return;
+  const normal = Provider.normal;
+  const sidebars = Provider.sidebars;
+  const menuButtons = 'button[aria-haspopup="menu"], button[aria-haspopup="true"], [role="button"][aria-haspopup="menu"], button[data-conversation-options-trigger], [role="button"][data-conversation-options-trigger], button[data-testid="history-item-more"], button[data-testid^="history-item-"][data-testid$="-options"], button[data-test-id="actions-menu-button"], gem-icon-button[data-test-id="actions-menu-button"] button, button[aria-label^="More options"], button[aria-label^="Weitere Optionen"]';
+  const dialogSelector = '[role="dialog"], [role="alertdialog"], dialog[open], mat-dialog-container';
+  const deleteNames = new Set(['Löschen', 'Chat löschen', 'Unterhaltung löschen', 'Delete', 'Delete chat', 'Delete conversation']);
+  const cancelNames = new Set(['Abbrechen', 'Cancel']);
+
+  function visibilityIssue(el) {
+    if (!el?.isConnected || !el.getClientRects().length) return {reason:'no-layout',blocker:el};
+    const hidden = el.closest('[hidden], [aria-hidden="true"]');
+    if (hidden) return {reason:'hidden-ancestor',blocker:hidden};
+    const style = getComputedStyle(el);
+    if (style.display === 'none' || style.visibility === 'hidden') return {reason:'hidden-style',blocker:el};
+    for (let parent=el.parentElement;parent;parent=parent.parentElement) {
+      if (parent.clientHeight && parent.clientWidth) continue;
+      const clipping=getComputedStyle(parent);
+      // Non-replaced inline and contents wrappers have no client box. Their
+      // zero client dimensions do not make their visible children collapsed.
+      if (clipping.display === 'inline' || clipping.display === 'contents') continue;
+      // Ordinary scrolling retains a nonzero viewport. A zero-size clipping
+      // ancestor is a collapsed group, even if descendants retain layout boxes.
+      if ((!parent.clientHeight && /^(hidden|clip|auto|scroll)$/.test(clipping.overflowY)) ||
+          (!parent.clientWidth && /^(hidden|clip|auto|scroll)$/.test(clipping.overflowX))) return {reason:'clipped-ancestor',blocker:parent};
+    }
+    return {reason:null,blocker:null};
+  }
+  const visible = el => visibilityIssue(el).reason === null;
+
+  const titleOf = Provider.title;
+  const chatId = Provider.identity;
+
+  function menuController(button) {
+    if (Provider.key !== 'gemini') return button;
+    const host = button.closest('gem-icon-button[data-test-id="actions-menu-button"]');
+    return host && host.querySelectorAll('button').length === 1 ? host : button;
+  }
+  function menuDisabled(button, controller = button) {
+    return [button, controller].some(node => node.disabled || node.hasAttribute('disabled') || node.getAttribute('aria-disabled') === 'true');
+  }
+
+  function menuFor(anchor, root, trace = null) {
+    const expectedId = chatId(anchor);
+    let row = anchor;
+    for (let depth = 0; row && row !== root && depth < 6; depth++, row = row.parentElement) {
+      // ChatGPT now wraps the link in three layout elements before its row.
+      // Never borrow a navigation-wide control when looking farther upward.
+      if (row !== anchor && row.matches('nav, aside, [role="navigation"]')) break;
+      const ids = new Set([...row.querySelectorAll(Provider.entries)].map(a => chatId(a)).filter(Boolean));
+      if (row.matches(Provider.entries)) {const id=chatId(row);if(id)ids.add(id);}
+      // Hover-only controls can have display:none/visibility:hidden. The row
+      // must be visible, but its unique native menu need not be painted yet.
+      const buttons = [...row.querySelectorAll(menuButtons)];
+      trace?.push({row,ids:ids.size,buttons});
+      if (ids.size > 1) return null;
+      if (buttons.length === 1) {
+        const triggerId = buttons[0].getAttribute('data-conversation-options-trigger');
+        if (triggerId !== null && triggerId.toLowerCase() !== expectedId) return null;
+        return buttons[0];
+      }
+      if (buttons.length > 1) return null;
+    }
+    return null;
+  }
+
+  function roots() { return [...document.querySelectorAll(sidebars)].filter(Provider.isRoot); }
+  function inspect(anchor) {
+    const main = anchor.closest('main, [role="main"]');
+    return {visibility:visibilityIssue(anchor),titleRecognized:Boolean(titleOf(anchor)),
+      roots:[...document.querySelectorAll(sidebars)].filter(root=>root.contains(anchor)).slice(0,8).map(root=>{
+        const trace=[],menu=menuFor(anchor,root,trace);
+        return {root,accepted:Provider.isRoot(root),visibility:visibilityIssue(root),contentExcluded:Boolean(main&&root.contains(main)),menu,trace};
+      })};
+  }
+  function discover() {
+    const found = new Map();
+    for (const root of roots()) {
+      if (!visible(root)) continue;
+      for (const anchor of root.querySelectorAll(Provider.entries)) {
+        const main = anchor.closest('main, [role="main"]');
+        if (main && root.contains(main)) continue;
+        const id = chatId(anchor);
+        if (!id || found.has(id) || !visible(anchor)) continue;
+        const title = titleOf(anchor);
+        const menu = menuFor(anchor, root);
+        if (title && menu) found.set(id, {id, title, anchor, menu, controller: menuController(menu), root});
+      }
+    }
+    return [...found.values()];
+  }
+
+  async function loadMore(signal, onProgress) {
+    const initial = discover();
+    const knownRoots = roots().filter(visible);
+    const scrollers = new Set();
+    for (const chat of initial) {
+      for (let node = chat.anchor.parentElement; node && node !== document.body; node = node.parentElement) {
+        if (!knownRoots.some(root => root.contains(node))) continue;
+        const style = getComputedStyle(node);
+        if (/^(auto|scroll)$/.test(style.overflowY) && node.scrollHeight > node.clientHeight + 2 && node.clientHeight > 0) {
+          scrollers.add(node);break;
+        }
+      }
+    }
+    if (scrollers.size !== 1) throw new Error('Keine eindeutige scrollbare Chatliste erkannt. Bitte die Seitenleiste öffnen und dort manuell scrollen.');
+    const scroller = [...scrollers][0];
+    const seen = new Set(initial.map(chat => chat.id));
+    let previous = new Set(seen), quiet = 0;
+    const started = Date.now();
+    for (let step = 0; step < 40 && Date.now() - started < 30000; step++) {
+      check(signal);
+      if (!visible(scroller) || !roots().some(root => root.contains(scroller))) throw new Error('Die Chatliste hat sich verändert. Bitte erneut öffnen.');
+      if (shown(dialogSelector).length || shown('[role="menu"]').length) throw new Error('Bitte zuerst offene Menüs oder Dialoge schließen.');
+      const beforeHeight = scroller.scrollHeight;
+      const beforeCount = seen.size;
+      scroller.scrollBy({top: Math.max(100, scroller.clientHeight * .85), behavior:'instant'});
+      await delay(650);
+      check(signal);
+      const current = discover();
+      const ids = new Set(current.map(chat => chat.id));
+      if ([...previous].some(id => !ids.has(id))) throw new Error('Die Seite blendet beim Scrollen Chats aus. Bitte in kleineren Gruppen arbeiten; deine Auswahl bleibt erhalten.');
+      current.forEach(chat => seen.add(chat.id));previous=ids;
+      onProgress({added:seen.size-initial.length});
+      const atBottom = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 3;
+      quiet = atBottom && beforeHeight === scroller.scrollHeight && beforeCount === seen.size ? quiet + 1 : 0;
+      if (quiet >= 4) return {added:seen.size-initial.length, limited:false};
+    }
+    return {added:seen.size-initial.length, limited:true};
+  }
+
+  function preflight(items) {
+    const current = new Map(discover().map(chat => [chat.id,chat]));
+    for (const item of items) {
+      const chat = current.get(item.id);
+      if (!chat || chat.title !== item.title) throw new Error(`Die Auswahl ist nicht vollständig erreichbar oder wurde verändert: „${item.title}“. Es wurde noch nichts gelöscht. Bitte den Chat wieder in die Seitenleiste laden oder aus der Auswahl entfernen.`);
+    }
+  }
+
+  function check(signal) {
+    if (signal?.aborted) throw new Error('Von dir angehalten.');
+  }
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+  async function waitFor(predicate, message, signal, timeout = 6000) {
+    const end = Date.now() + timeout;
+    while (Date.now() < end) {
+      check(signal);
+      const value = predicate();
+      if (value) return value;
+      await delay(100);
+    }
+    throw new Error(message);
+  }
+  function shown(selector, root = document) {
+    const elements = [...root.querySelectorAll(selector)].filter(visible);
+    return elements.filter(el => !elements.some(other => other !== el && other.contains(el)));
+  }
+  function named(root, selector, names) {
+    return shown(selector, root).filter(el => {
+      const copy = el.cloneNode(true);
+      copy.querySelectorAll('svg, mat-icon, gem-icon, [aria-hidden="true"]').forEach(icon => icon.remove());
+      return names.has(normal(copy.textContent)) || names.has(normal(el.getAttribute('aria-label')));
+    });
+  }
+  function semanticDelete(control, confirmation = false) {
+    const marker = Provider.key === 'chatgpt'
+      ? '[data-testid="delete-chat-menu-item"], [data-testid="delete-conversation-confirm-button"]'
+      : Provider.key === 'gemini' ? '[data-test-id="delete-button"]' : null;
+    if (marker && (control.matches(marker) || control.querySelector(marker))) return true;
+    if (!confirmation && Provider.key === 'gemini' && control.closest('gem-menu-item[data-test-id="delete-button"]')) return true;
+    if (confirmation && Provider.key === 'gemini' &&
+        (control.matches('button[data-test-id="confirm-button"]') || control.closest('gem-button[data-test-id="confirm-button"]'))) return true;
+    if (control.matches('[data-variant="destructive"], [variant="destructive"]')) return true;
+    // Claude's danger tokens are semantic UI variants, independent of locale.
+    if ([...control.classList].some(token => /^(?:[^:]+:)*(?:bg|text)-(?:danger|destructive)(?:-|$)/.test(token))) return true;
+    if (!confirmation && control.querySelector('svg.lucide-trash, svg.lucide-trash-2, [data-icon="trash"], [data-icon="trash-2"]')) return true;
+    return false;
+  }
+  function deleteControls(root, selector, confirmation = false) {
+    const textMatches = named(root, selector, deleteNames);
+    return shown(selector, root).filter(control => semanticDelete(control, confirmation) || textMatches.includes(control));
+  }
+  function assertTarget(item) {
+    const current = discover().find(chat => chat.id === item.id);
+    if (!current) throw new Error(`„${item.title}“ ist nicht mehr in der geladenen Seitenleiste. Bitte neu auswählen.`);
+    if (current.title !== item.title) throw new Error(`Der Titel von „${item.title}“ hat sich geändert. Bitte neu auswählen.`);
+    return current;
+  }
+  function assertBoundTarget(target, item) {
+    // Modal libraries may aria-hide the sidebar. Validate the bound DOM node
+    // directly without relaxing discovery or looking up another chat by title.
+    if (!target.anchor.isConnected || !target.root.contains(target.anchor) ||
+        chatId(target.anchor) !== item.id || titleOf(target.anchor) !== item.title ||
+        !target.menu.isConnected || menuFor(target.anchor, target.root) !== target.menu ||
+        menuController(target.menu) !== target.controller) {
+      throw new Error('Der ausgewählte Chat hat sich während der Bestätigung verändert. Bitte neu auswählen.');
+    }
+  }
+  function titleInDialog(dialog, title) {
+    const described = (dialog.getAttribute('aria-describedby') || '').split(/\s+/)
+      .map(id => document.getElementById(id)).filter(el => el && dialog.contains(el));
+    const regions = described.length ? described : [dialog];
+    const controls = 'button, [role="button"], a, input, select, textarea, [role="menuitem"], h1, h2, h3, h4, h5, h6, [role="heading"]';
+    return regions.some(region => [region, ...region.querySelectorAll('strong, b, span, p')].some(el =>
+      !el.closest(controls) && !el.querySelector(controls) && normal(el.textContent) === title));
+  }
+  function validDialog(dialog, item) {
+    const explicitId = dialog.getAttribute('data-conversation-id');
+    if (explicitId && explicitId.replace(/^c_/, '').toLowerCase() !== item.id) return false;
+    const explicitTitles = [...dialog.querySelectorAll('strong, b, [data-chat-title], [data-testid="conversation-title"]')]
+      .filter(el => !el.closest('button, [role="button"], h1, h2, h3, [role="heading"]'));
+    if (explicitTitles.some(el => normal(el.textContent) && normal(el.textContent) !== item.title)) return false;
+    const description = dialog.cloneNode(true);
+    description.querySelectorAll('h1, h2, h3, h4, h5, h6, [role="heading"], button, [role="button"], svg, mat-icon, gem-icon, [aria-hidden="true"]').forEach(el => el.remove());
+    const descriptionText = normal(description.textContent);
+    // Some older dialogs interpolate the title into a text node rather than
+    // marking it up. Keep recognizing that explicit target as a veto, even
+    // when the action button has a locale-independent destructive marker.
+    const proseTitle = descriptionText.match(/^(?:This will delete |Dadurch wird folgender Chat gelöscht: )(.+)$/)?.[1];
+    if (proseTitle && proseTitle !== item.title && proseTitle !== `${item.title}.`) return false;
+    if (Provider.key === 'chatgpt') {
+      // The current native dialog repeats its full sentence in an accessible
+      // paragraph and a visible div, without a separate title element. Match
+      // the complete subject, and reject conflicting copies of that sentence.
+      const controls='button, [role="button"], a, input, select, textarea, [role="menuitem"], h1, h2, h3, h4, h5, h6, [role="heading"]';
+      const titles=new Set([...dialog.querySelectorAll('p, div, span')]
+        .filter(el=>!el.closest(controls)&&!el.querySelector(controls))
+        .map(el=>normal(el.textContent).match(/^This will permanently delete (.+)\. This (?:can't|can’t|cannot) be undone\.$/)?.[1]).filter(Boolean));
+      if (titles.size) return titles.size===1 && titles.has(item.title);
+    }
+    if (titleInDialog(dialog, item.title)) return true;
+    if (!Provider.genericDialog) return false;
+    const headings = shown('h1, h2, h3, [role="heading"]', dialog);
+    if (headings.length !== 1 || !normal(headings[0].textContent)) return false;
+    const actions = deleteControls(dialog, 'button, [role="button"]', true);
+    // Called only after clicking the ID-bound row's verified delete menu item.
+    // A unique semantic destructive action supports localized session dialogs
+    // without inferring their identity from translated prose or button order.
+    if (actions.length === 1 && semanticDelete(actions[0], true)) return true;
+    const headingNames = new Set(['Delete chat', 'Delete chat?', 'Delete this chat?', 'Delete conversation', 'Delete conversation?', 'Delete session', 'Delete session?', 'Chat löschen', 'Chat löschen?', 'Diesen Chat löschen?', 'Unterhaltung löschen', 'Unterhaltung löschen?']);
+    if (!headingNames.has(normal(headings[0].textContent))) return false;
+    if (named(dialog, 'button, [role="button"]', cancelNames).length !== 1) return false;
+    if (Provider.key === 'gemini' && !dialog.querySelector('[data-test-id="confirm-button"]')) return false;
+    if (!Provider.genericDescriptions.has(descriptionText)) return false;
+    // A generic dialog is accepted only after the exact ID-bound trigger/menu
+    // relationship has been verified, never as an independently found dialog.
+    return true;
+  }
+  function listedIds() {
+    return new Set(roots().flatMap(root =>
+      [...root.querySelectorAll(Provider.entries)].map(a => chatId(a)).filter(Boolean)));
+  }
+  function createBatchGuard() {
+    // One baseline for the whole queue: a late error must not become the next
+    // chat's "preexisting" alert. Reappearing completed IDs also stop the queue.
+    const alertsBefore = new Map(shown('[role="alert"]').map(el => [el, normal(el.textContent)]));
+    const processed = new Set();
+    const verify = () => {
+      const changed = shown('[role="alert"]').find(el => normal(el.textContent) && alertsBefore.get(el) !== normal(el.textContent));
+      if (changed) throw new Error(`${Provider.name} meldet einen Hinweis oder Fehler. Bitte den Verlauf prüfen.`);
+      const listed = listedIds();
+      if ([...processed].some(id => listed.has(id))) throw new Error('Ein bereits bearbeiteter Chat ist wieder im Verlauf erschienen. Bitte den Verlauf prüfen.');
+    };
+    return Object.freeze({
+      verify,
+      record: id => processed.add(id),
+      async settle(signal) {
+        const start = Date.now();
+        await waitFor(() => {verify();return Date.now() - start >= 2200;}, 'Bitte den Verlauf prüfen.', signal, 4000);
+      }
+    });
+  }
+  async function activateMenu(button, verify = () => {}) {
+    if (Provider.key === 'chatgpt') {
+      // Menu libraries can toggle on pointerdown rather than click. Observe
+      // the result: preventDefault alone can merely suppress a focus change.
+      const expanded=button.getAttribute('aria-expanded'),before=shown('[role="menu"]');
+      const init={bubbles:true,cancelable:true,composed:true,pointerType:'mouse',pointerId:1,isPrimary:true,button:0};
+      button.dispatchEvent(new PointerEvent('pointerdown',{...init,buttons:1}));
+      verify();
+      button.dispatchEvent(new PointerEvent('pointerup',{...init,buttons:0}));
+      await delay(0); // Let framework state updates from the pointer events settle.
+      verify();
+      const after=shown('[role="menu"]');
+      if (expanded!==button.getAttribute('aria-expanded') || before.length!==after.length || before.some(menu=>!after.includes(menu))) return;
+    }
+    if (!menuDisabled(button,menuController(button))) button.click();
+  }
+  async function dismiss(dialog, menuButton, controller = menuButton) {
+    if (dialog?.isConnected) {
+      const cancel = named(dialog, 'button, [role="button"]', cancelNames);
+      if (cancel.length === 1) cancel[0].click();
+    }
+    if (menuButton && !menuDisabled(menuButton, controller) &&
+        [menuButton, controller].some(node => node.getAttribute('aria-expanded') === 'true')) await activateMenu(menuButton);
+  }
+
+  async function deleteChat(item, signal, guard = createBatchGuard()) {
+    check(signal);
+    guard.verify();
+    if (shown(dialogSelector).length || shown('[role="menu"]').length) {
+      throw new Error(`Bitte zuerst offene ${Provider.name}-Dialoge und Menüs schließen.`);
+    }
+    let target = assertTarget(item);
+    target.anchor.scrollIntoView({block: 'nearest', inline: 'nearest', behavior: 'instant'});
+    await delay(160);
+    check(signal);
+    target = assertTarget(item); // Scrolling can recycle a virtualized row.
+    let dialog;
+    let committed = false;
+    try {
+      guard.verify();
+      if (menuDisabled(target.menu, target.controller)) throw new Error('Das Chat-Menü ist deaktiviert.');
+      await activateMenu(target.menu,()=>{check(signal);assertBoundTarget(target,item);});
+      const menu = await waitFor(() => {
+        const menus = shown('[role="menu"]');
+        if (menus.length > 1) throw new Error('Mehrere Menüs erkannt; Zuordnung nicht eindeutig.');
+        return menus[0];
+      }, 'Das Chat-Menü wurde nicht erkannt.', signal);
+      // Gemini owns menu state on gem-icon-button, while its inner native
+      // button receives the click. Conflicting associations must still stop.
+      const associations = new Set([target.menu, target.controller].map(node => normal(node.getAttribute('aria-controls'))).filter(Boolean));
+      const controls = [...associations][0];
+      if (associations.size !== 1 || (menu.id !== controls && !document.getElementById(controls)?.contains(menu))) {
+        throw new Error('Das geöffnete Menü gehört nicht eindeutig zum ausgewählten Chat.');
+      }
+      const remove = deleteControls(menu, '[role="menuitem"]');
+      if (remove.length !== 1) throw new Error('Der Menüpunkt „Löschen“ wurde nicht eindeutig erkannt. Die Oberfläche stellt keine eindeutige Löschaktion bereit.');
+      if (remove[0].disabled || remove[0].getAttribute('aria-disabled') === 'true') throw new Error('Der Menüpunkt zum Löschen ist deaktiviert.');
+      check(signal);
+      guard.verify();
+      assertBoundTarget(target, item);
+      remove[0].click();
+      dialog = await waitFor(() => {
+        guard.verify();
+        const dialogs = shown(dialogSelector);
+        if (dialogs.length > 1) throw new Error('Mehrere Bestätigungsdialoge erkannt.');
+        return dialogs[0];
+      }, 'Der Löschdialog wurde nicht erkannt. Bitte den Verlauf prüfen, bevor du erneut startest.', signal);
+      if (!validDialog(dialog, item)) {
+        throw new Error(`Der Löschdialog bestätigt nicht eindeutig „${item.title}“. Es wird nicht weitergelöscht.`);
+      }
+      const buttons = deleteControls(dialog, 'button, [role="button"]', true);
+      if (buttons.length !== 1 || buttons[0].disabled || buttons[0].getAttribute('aria-disabled') === 'true') {
+        throw new Error('Die Löschbestätigung ist nicht eindeutig verfügbar.');
+      }
+      check(signal);
+      guard.verify();
+      assertBoundTarget(target, item);
+      committed = true;
+      buttons[0].click();
+      // After committing, finish observing this one operation even if Stop is pressed.
+      let goneSince = 0;
+      await waitFor(() => {
+        guard.verify();
+        const stillListed = listedIds().has(item.id);
+        if (visible(dialog) || stillListed || !roots().some(visible)) { goneSince = 0; return false; }
+        if (!goneSince) goneSince = Date.now();
+        return Date.now() - goneSince >= 1200;
+      }, 'Das Ergebnis der letzten Löschung ist unklar. Bitte Seite neu laden und den Verlauf prüfen; kein automatischer Wiederholungsversuch.', null, 10000);
+      guard.record(item.id);
+    } catch (error) {
+      if (!committed) await dismiss(dialog, target.menu, target.controller);
+      throw error;
+    }
+  }
+
+  globalThis.ChatCleanerCore = Object.freeze({discover, inspect, loadMore, preflight, deleteChat, createBatchGuard, normal, provider: Provider});
+})();

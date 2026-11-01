@@ -1,0 +1,28 @@
+# Dependencies and generated test output
+node_modules/
+test-results/
+playwright-report/
+coverage/
+*.log
+
+# Distribution archives and local preview screenshots
+*.zip
+/auswahl.png
+/schmal-auswahl.png
+/dunkel.png
+/bestaetigung.png
+/schmal.png
+/nicht-erreichbar.png
+
+# Local diagnostics, credentials and editor state
+ai-chat-diagnose-*.json
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.agents/
+.codex/
+.aws/
