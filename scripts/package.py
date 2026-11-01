@@ -14,7 +14,8 @@ version = manifest["version"]
 if version != package["version"]:
     raise SystemExit("manifest.json and package.json versions differ")
 files = [
-    "LICENSE", "PRIVACY.md", "README.txt", "manifest.json",
+    "LICENSE", "PRIVACY.md", "PRIVACY.de.md", "README.txt", "manifest.json",
+    "i18n.js", "_locales/en/messages.json", "_locales/de/messages.json",
     "providers.js", "core.js", "ui-style.js", "content.js", "content.css",
     "popup.html", "popup.js", "popup.css",
     "icons/icon16.png", "icons/icon32.png", "icons/icon48.png", "icons/icon128.png",
@@ -30,8 +31,8 @@ if not referenced.issubset(files):
 
 dist = root / "dist"
 dist.mkdir(exist_ok=True)
-for suffix, prefix in [("", "ai-chat-auswahl/"), ("-webstore", "")]:
-    destination = dist / f"ai-chat-auswahl-{version}{suffix}.zip"
+for suffix, prefix in [("", "chatsweep/"), ("-webstore", "")]:
+    destination = dist / f"chatsweep-{version}{suffix}.zip"
     with ZipFile(destination, "w", compression=ZIP_DEFLATED) as archive:
         for name in sorted(files):
             info = ZipInfo(f"{prefix}{name}", date_time=(2026, 1, 1, 0, 0, 0))

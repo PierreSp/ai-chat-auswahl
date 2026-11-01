@@ -1,0 +1,28 @@
+NAME
+ChatSweep – Chats gesammelt löschen
+
+KURZBESCHREIBUNG
+Mehr Überblick in ChatGPT, Claude und Gemini: Chats auswählen, gemeinsam prüfen und gesammelt löschen. Lokal und ohne Tracking.
+
+AUSFÜHRLICHE BESCHREIBUNG
+Weniger Chats. Mehr Überblick.
+
+Räume alte Unterhaltungen auf, ohne jedes Chat-Menü einzeln zu öffnen. ChatSweep ergänzt Checkboxen im Verlauf von ChatGPT, Claude und Gemini. Du wählst aus, prüfst die Liste und löschst die bestätigten Chats gemeinsam.
+
+EINFACH AUSWÄHLEN
+Markiere einzelne Chats, wähle mit Umschalt einen Bereich oder erfasse alle aktuell geladenen Einträge. Lade bei Bedarf weiteren Verlauf nach. Neue Einträge bleiben abgewählt. Codex-Aufgaben im ChatGPT-Verlauf sind in der Vorschau gekennzeichnet.
+
+ERST PRÜFEN, DANN LÖSCHEN
+Sieh dir die vollständige Auswahl an, bevor etwas entfernt wird. Nimm einzelne Chats wieder heraus, bestätige deine Auswahl und verfolge den Fortschritt. Du kannst weitere Vorgänge jederzeit anhalten. Bei unklarer Zuordnung von Chat, Menü oder Bestätigung stoppt ChatSweep.
+
+LOKAL VERARBEITET
+Chat-Titel und Bedienelemente werden im geöffneten Tab verarbeitet. Keine Telemetrie, Entwicklerserver, API-Schlüssel oder Diagnoseexporte. Die unterstützten Websites senden nach den ausgelösten Klicks ihre üblichen Anfragen.
+
+Englische und deutsche Oberfläche inklusive. ChatSweep folgt der Browsersprache und verwendet für andere Sprachen Englisch.
+
+VOR DEM START
+Löschen ist endgültig und betrifft dein Konto. Lass den Tab bis zum Ende geöffnet; lade ihn nicht neu und wechsle nicht zu einer anderen Seite. Eine bereits bestätigte Löschung kann nach „Anhalten“ noch fertig werden. Bei Gemini werden auch zugehörige Aktivitäten und im Chat erstellte Inhalte entfernt.
+
+ChatSweep erfasst den geladenen Verlauf. Geschlossene Projekte, Archive und Suchergebnisse werden nicht durchsucht. Website-Änderungen oder andere native Dialogvarianten können Anpassungen erfordern. Dies ist eine öffentliche Beta.
+
+Freie Software unter GPL-3.0. Unabhängiges Hilfsprogramm, kein offizielles Produkt von OpenAI, Anthropic oder Google.

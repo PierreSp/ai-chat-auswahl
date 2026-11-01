@@ -1,78 +1,71 @@
-# AI Chat-Auswahl
+# ChatSweep
 
-Chrome-Erweiterung zum Auswählen und gemeinsamen Löschen von Chats bei **ChatGPT,
-Claude und Gemini**. Version **1.3.0**, erste öffentliche Beta.
+**Fewer chats. More clarity.**
 
-Die Erweiterung ergänzt Checkboxen in der Verlaufsseitenleiste. Vor dem Löschen
-prüfst du die vollständige Auswahl. Auch Codex-Aufgaben im ChatGPT-Verlauf sind
-auswählbar und in der Vorschau gekennzeichnet.
+Select, review and bulk delete conversations in ChatGPT, Claude and Gemini.
+ChatSweep adds checkboxes to your chat history so you can clean up several
+conversations in one go. Codex tasks in ChatGPT's history are supported too.
 
-![Auswahlfenster mit künstlichen Beispielchats in einer lokalen Testumgebung](docs/images/auswahl-demo.png)
+**Version 1.4.0 · Public beta · GPL-3.0**
 
-Die Abbildung zeigt die Erweiterung auf einer lokalen Testseite, keine echten Kontodaten.
+Previously called AI Chat-Auswahl. [Deutsche Anleitung](README.de.md).
 
-**Während des Löschens den Tab geöffnet lassen. Nicht neu laden und nicht zu
-einer anderen Seite wechseln, bis der Vorgang beendet ist.**
+![Reviewing disposable test chats in ChatGPT before deletion](store/screenshots/chatgpt-review-en.jpg)
 
-Löschen ist endgültig und betrifft dein Konto. Bei Gemini umfasst es auch
-zugehörige Aktivitäten und im Chat erstellte Inhalte wie Canvas-Dokumente.
-Die Erweiterung hält bei uneindeutigen IDs, Menüs oder Dialogen an.
+Real extension screenshot, showing only chats created for testing.
 
-## Installation
+## Install
 
-1. [AI Chat-Auswahl 1.3.0 herunterladen](https://github.com/PierreSp/ai-chat-auswahl/releases/download/v1.3.0/ai-chat-auswahl-1.3.0.zip) und entpacken.
-2. In Chrome `chrome://extensions` öffnen und **Entwicklermodus** einschalten.
-3. **Entpackte Erweiterung laden** wählen und den Ordner `ai-chat-auswahl` mit
-   `manifest.json` auswählen. Diesen Ordner anschließend an seinem Platz lassen.
-4. ChatGPT, Claude oder Gemini neu laden und **Chats aufräumen** öffnen.
+1. [Download ChatSweep 1.4.0](https://github.com/PierreSp/ai-chat-auswahl/releases/download/v1.4.0/chatsweep-1.4.0.zip) and unzip it.
+2. Open `chrome://extensions` in Chrome and enable **Developer mode**.
+3. Choose **Load unpacked** and select the `chatsweep` folder containing `manifest.json`.
+4. Keep that folder in place. Reload the supported websites and open **Clean up chats**.
 
-Alternativ dieses Repository klonen und dessen Ordner laden. Node.js und npm
-sind für die Benutzung nicht erforderlich. Eine Chrome-Web-Store-Version ist
-noch nicht veröffentlicht.
+No Node.js, npm, API key or separate account is needed to use the extension.
+Chrome Web Store submission materials are prepared; the extension is not yet
+listed in the Store.
 
-Bei Updates die Dateien im bestehenden Erweiterungsordner ersetzen, die
-Erweiterung auf `chrome://extensions` neu laden und danach die betroffenen
-Webseiten neu laden. Nicht während eines laufenden Löschvorgangs aktualisieren.
+To update, replace the files in your existing extension folder, reload the
+extension on `chrome://extensions`, then reload the supported tabs. Do not update
+while deletion is running.
 
-## Benutzung
+## How it works
 
-- Chats links ankreuzen. Für einen Bereich zuerst eine Checkbox normal anklicken,
-  anschließend **Umschalt** halten und die Checkbox am anderen Ende anklicken.
-  Ihr neuer Zustand gilt für den ganzen Bereich; bestehende Markierungen
-  außerhalb bleiben erhalten. Bei Bedarf vorher **Auswahl leeren** verwenden.
-- **Weitere Chats laden** scrollt die erkannte Seitenleiste begrenzt weiter.
-  Neue Einträge bleiben abgewählt. Manuelles Scrollen funktioniert ebenfalls.
-- **Auswahl löschen** öffnet die Vorschau. Einzelne Einträge lassen sich dort
-  entfernen. Nach der Prüfung das Bestätigungsfeld anhaken und Löschen starten.
-- Den Tab bis zum Ende geöffnet lassen. **Anhalten** oder **Escape** stoppt
-  weitere Löschungen; eine bereits bestätigte Löschung kann noch fertig werden.
-- Bei einem Abbruch den Verlauf prüfen, bevor du eine neue Auswahl bestätigst.
+- Select individual chats, or click one checkbox and **Shift-click** the checkbox
+  at the other end of a range. Existing selections outside the range remain unchanged.
+- **Load more chats** scrolls the loaded history. New entries stay unselected.
+- **Delete selection** opens a review of every selected item. Remove anything you
+  want to keep, then confirm the reviewed selection.
+- **Keep the tab open while deletion runs. Do not reload or navigate away.**
+- **Stop** or **Escape** prevents further deletions. A deletion already confirmed
+  may still finish. Check your history after a stop or error.
 
-Geladene Einträge außerhalb des Bildschirms erhalten ebenfalls Checkboxen.
-Eingeklappte Gruppen musst du selbst öffnen. Geschlossene Projekte, Archive und
-Suchergebnisse werden nicht durchsucht. Eine geladene Auswahl ist keine
-vollständige Übersicht aller Chats im Konto.
+Deletion is permanent and affects your account. On Gemini it also includes
+associated activity and content created in that chat, such as Canvas documents.
 
-## Datenschutz und Grenzen
+The interface follows Chrome's language: German is available, with English as
+the default and fallback for other languages. Support for the websites' own
+native confirmation dialogs is separate and covers known variants, not every language.
 
-Die Erweiterung arbeitet lokal über die Oberfläche der drei Websites. Keine
-eigenen Netzwerkanfragen, API-Schlüssel, Telemetrie oder Diagnoseexporte. Auswahl
-und Fortschritt liegen nur im Arbeitsspeicher des Tabs. Details: [Datenschutz](PRIVACY.md).
+## Scope and privacy
 
-Änderungen an den Websites können Anpassungen erforderlich machen. Die Erkennung
-unterstützt bekannte Oberflächen und Dialogvarianten, nicht jede mögliche Sprache
-oder Kontovariante. Die automatische Testsuite verwendet künstliche Chats.
-Live wurden Menüs und Dialoge untersucht und abgebrochen; produktive Löschungen
-wurden vom Benutzer erprobt. Eine vollständige Live-Testmatrix über alle Dienste
-und Sprachen liegt nicht vor.
+Loaded entries outside the visible screen can be selected. Collapsed groups must
+be opened manually. Closed projects, archives and search results are not searched.
+A loaded list is not a complete inventory of all chats in your account.
 
-Probleme können über [GitHub Issues](https://github.com/PierreSp/ai-chat-auswahl/issues)
-gemeldet werden. Bitte Dienst, Erweiterungsversion und Fehlermeldung angeben;
-private Chat-Titel und Kontodaten vor dem Veröffentlichen entfernen.
+ChatSweep uses the websites' existing menus and confirmation dialogs. It stops
+when identifiers, menus or confirmation details cannot be matched reliably.
+Changes to a provider's interface can require an update.
 
-## Entwicklung und Tests
+Chat titles, identifiers and controls are processed locally in the tab. No
+analytics, diagnostic exports, developer servers or extension-originated network
+requests. Selection and progress are held in memory and disappear when the tab
+closes or reloads. The websites make their usual requests in response to the
+confirmed actions. [Privacy policy](PRIVACY.md) · [Datenschutz](PRIVACY.de.md).
 
-Voraussetzung: Node.js 20 oder neuer.
+## Development
+
+Node.js 20 or newer:
 
 ```sh
 npm ci
@@ -80,31 +73,33 @@ npx playwright install chromium
 npm test
 ```
 
-Die Browsertests laufen in einem neuen temporären Profil. Anfragen an die drei
-Dienste werden durch lokale Testseiten ersetzt; andere Anfragen werden blockiert.
-Sie löschen keine echten Kontodaten. Optional können `PLAYWRIGHT_MODULE` und
-`CHROMIUM_PATH` vorhandene Installationen angeben.
+Automated browser tests use a fresh temporary profile and synthetic local pages.
+Requests to supported providers are intercepted; all other requests are blocked.
+The suite never deletes real account data. `PLAYWRIGHT_MODULE` and `CHROMIUM_PATH`
+can point to existing installations.
 
-Für das Release-Archiv wird zusätzlich Python 3 benötigt:
+To create the distribution archives, also install Python 3 and run:
 
 ```sh
 npm run package
 ```
 
-Das erzeugt `dist/ai-chat-auswahl-1.3.0.zip` und eine SHA-256-Prüfsumme. Das Archiv
-enthält den direkt ausführbaren Erweiterungsquellcode, Bedienung und Lizenz.
-Entwicklungswerkzeuge, Testdaten und Git-Verlauf werden nicht mitgepackt.
-Zusätzlich entsteht `dist/ai-chat-auswahl-1.3.0-webstore.zip` mit `manifest.json`
-direkt im Archivwurzelverzeichnis für den Store-Upload. Die
-[Store-Vorbereitung](docs/chrome-web-store.md) beschreibt die noch offenen Schritte.
-Hinweise zur [Erkennungsbasis](docs/recognition-sources.txt) liegen im Repository.
+`dist/chatsweep-1.4.0.zip` is for manual installation;
+`dist/chatsweep-1.4.0-webstore.zip` has its manifest at the archive root for Store
+submission. Each has a SHA-256 checksum. Both contain the same readable extension
+sources, icons, translations, license and user documentation. Development tools
+and test data are excluded.
 
-## Lizenz
+[Live test report](store/live-test-report.md) · [Store preparation](docs/chrome-web-store.md) · [Changes](CHANGELOG.md) ·
+[Recognition sources](docs/recognition-sources.txt)
 
-Copyright (C) 2026 Pierre Springer. Freie Software unter der **GNU General Public
-License, Version 3 (GPL-3.0-only)**. Der vollständige Lizenztext steht in [LICENSE](LICENSE).
-Das Programm wird ohne Gewährleistung bereitgestellt.
+## Support and license
 
-[Änderungen](CHANGELOG.md) · [Ausführliche Bedienung](README.txt)
+Report problems in [GitHub Issues](https://github.com/PierreSp/ai-chat-auswahl/issues).
+Include the provider, extension version and error message. Remove private titles,
+account details and chat content before posting.
 
-Unabhängiges Hilfsprogramm; kein offizielles Produkt von OpenAI, Anthropic oder Google.
+Copyright (C) 2026 Pierre Springer. Licensed under the
+[GNU General Public License v3.0 only](LICENSE). Provided without warranty.
+
+Independent software; not an official product of OpenAI, Anthropic or Google.

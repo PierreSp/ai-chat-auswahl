@@ -5,6 +5,7 @@
   'use strict';
   const Provider = globalThis.ChatCleanerProvider;
   if (!Provider) return;
+  const {t} = globalThis.ChatCleanerI18n;
   const normal = Provider.normal;
   const sidebars = Provider.sidebars;
   const menuButtons = 'button[aria-haspopup="menu"], button[aria-haspopup="true"], [role="button"][aria-haspopup="menu"], button[data-conversation-options-trigger], [role="button"][data-conversation-options-trigger], button[data-testid="history-item-more"], button[data-testid^="history-item-"][data-testid$="-options"], button[data-test-id="actions-menu-button"], gem-icon-button[data-test-id="actions-menu-button"] button, button[aria-label^="More options"], button[aria-label^="Weitere Optionen"]';
@@ -103,15 +104,15 @@
         }
       }
     }
-    if (scrollers.size !== 1) throw new Error('Keine eindeutige scrollbare Chatliste erkannt. Bitte die Seitenleiste öffnen und dort manuell scrollen.');
+    if (scrollers.size !== 1) throw new Error(t('errorScrollList'));
     const scroller = [...scrollers][0];
     const seen = new Set(initial.map(chat => chat.id));
     let previous = new Set(seen), quiet = 0;
     const started = Date.now();
     for (let step = 0; step < 40 && Date.now() - started < 30000; step++) {
       check(signal);
-      if (!visible(scroller) || !roots().some(root => root.contains(scroller))) throw new Error('Die Chatliste hat sich verändert. Bitte erneut öffnen.');
-      if (shown(dialogSelector).length || shown('[role="menu"]').length) throw new Error('Bitte zuerst offene Menüs oder Dialoge schließen.');
+      if (!visible(scroller) || !roots().some(root => root.contains(scroller))) throw new Error(t('errorListChanged'));
+      if (shown(dialogSelector).length || shown('[role="menu"]').length) throw new Error(t('errorCloseOverlays'));
       const beforeHeight = scroller.scrollHeight;
       const beforeCount = seen.size;
       scroller.scrollBy({top: Math.max(100, scroller.clientHeight * .85), behavior:'instant'});
@@ -119,7 +120,7 @@
       check(signal);
       const current = discover();
       const ids = new Set(current.map(chat => chat.id));
-      if ([...previous].some(id => !ids.has(id))) throw new Error('Die Seite blendet beim Scrollen Chats aus. Bitte in kleineren Gruppen arbeiten; deine Auswahl bleibt erhalten.');
+      if ([...previous].some(id => !ids.has(id))) throw new Error(t('errorVirtualized'));
       current.forEach(chat => seen.add(chat.id));previous=ids;
       onProgress({added:seen.size-initial.length});
       const atBottom = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 3;
@@ -133,12 +134,12 @@
     const current = new Map(discover().map(chat => [chat.id,chat]));
     for (const item of items) {
       const chat = current.get(item.id);
-      if (!chat || chat.title !== item.title) throw new Error(`Die Auswahl ist nicht vollständig erreichbar oder wurde verändert: „${item.title}“. Es wurde noch nichts gelöscht. Bitte den Chat wieder in die Seitenleiste laden oder aus der Auswahl entfernen.`);
+      if (!chat || chat.title !== item.title) throw new Error(t('errorPreflight', item.title));
     }
   }
 
   function check(signal) {
-    if (signal?.aborted) throw new Error('Von dir angehalten.');
+    if (signal?.aborted) throw new Error(t('errorStopped'));
   }
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
   async function waitFor(predicate, message, signal, timeout = 6000) {
@@ -183,8 +184,8 @@
   }
   function assertTarget(item) {
     const current = discover().find(chat => chat.id === item.id);
-    if (!current) throw new Error(`„${item.title}“ ist nicht mehr in der geladenen Seitenleiste. Bitte neu auswählen.`);
-    if (current.title !== item.title) throw new Error(`Der Titel von „${item.title}“ hat sich geändert. Bitte neu auswählen.`);
+    if (!current) throw new Error(t('errorTargetMissing', item.title));
+    if (current.title !== item.title) throw new Error(t('errorTitleChanged', item.title));
     return current;
   }
   function assertBoundTarget(target, item) {
@@ -194,7 +195,7 @@
         chatId(target.anchor) !== item.id || titleOf(target.anchor) !== item.title ||
         !target.menu.isConnected || menuFor(target.anchor, target.root) !== target.menu ||
         menuController(target.menu) !== target.controller) {
-      throw new Error('Der ausgewählte Chat hat sich während der Bestätigung verändert. Bitte neu auswählen.');
+      throw new Error(t('errorBoundTarget'));
     }
   }
   function titleInDialog(dialog, title) {
@@ -301,16 +302,16 @@
     const processed = new Set();
     const verify = () => {
       const changed = shown('[role="alert"]').find(el => normal(el.textContent) && alertsBefore.get(el) !== normal(el.textContent));
-      if (changed) throw new Error(`${Provider.name} meldet einen Hinweis oder Fehler. Bitte den Verlauf prüfen.`);
+      if (changed) throw new Error(t('errorProviderAlert', Provider.name));
       const listed = listedIds();
-      if ([...processed].some(id => listed.has(id))) throw new Error('Ein bereits bearbeiteter Chat ist wieder im Verlauf erschienen. Bitte den Verlauf prüfen.');
+      if ([...processed].some(id => listed.has(id))) throw new Error(t('errorReappeared'));
     };
     return Object.freeze({
       verify,
       record: id => processed.add(id),
       async settle(signal) {
         const start = Date.now();
-        await waitFor(() => {verify();return Date.now() - start >= 2200;}, 'Bitte den Verlauf prüfen.', signal, 4000);
+        await waitFor(() => {verify();return Date.now() - start >= 2200;}, t('errorCheckHistory'), signal, 4000);
       }
     });
   }
@@ -339,11 +340,34 @@
         [menuButton, controller].some(node => node.getAttribute('aria-expanded') === 'true')) await activateMenu(menuButton);
   }
 
+  async function settledClaudeDialog(item, target, signal, guard) {
+    // Claude can briefly expose overlapping confirmation shells. Never pick
+    // one while ambiguous: require the same unique dialog to settle first.
+    const end = Date.now() + 6000;
+    let candidate = null, uniqueSince = 0, ambiguous = false;
+    while (Date.now() < end) {
+      check(signal);
+      guard.verify();
+      assertBoundTarget(target, item);
+      const dialogs = shown(dialogSelector);
+      if (dialogs.some(node => dialogIdentityConflict(node, item))) {
+        throw new Error(t('errorDialogIdentity', item.title));
+      }
+      ambiguous = dialogs.length > 1;
+      if (dialogs.length === 1) {
+        if (candidate !== dialogs[0]) {candidate = dialogs[0];uniqueSince = Date.now();}
+        if (Date.now() - uniqueSince >= 300) return candidate;
+      } else {candidate = null;uniqueSince = 0;}
+      await delay(100);
+    }
+    throw new Error(t(ambiguous ? 'errorMultipleDialogs' : 'errorResultMissing'));
+  }
+
   async function deleteChat(item, signal, guard = createBatchGuard()) {
     check(signal);
     guard.verify();
     if (shown(dialogSelector).length || shown('[role="menu"]').length) {
-      throw new Error(`Bitte zuerst offene ${Provider.name}-Dialoge und Menüs schließen.`);
+      throw new Error(t('errorProviderOverlays', Provider.name));
     }
     let target = assertTarget(item);
     target.anchor.scrollIntoView({block: 'nearest', inline: 'nearest', behavior: 'instant'});
@@ -354,34 +378,34 @@
     let committed = false;
     try {
       guard.verify();
-      if (menuDisabled(target.menu, target.controller)) throw new Error('Das Chat-Menü ist deaktiviert.');
+      if (menuDisabled(target.menu, target.controller)) throw new Error(t('errorMenuDisabled'));
       await activateMenu(target.menu,()=>{check(signal);assertBoundTarget(target,item);});
       const menu = await waitFor(() => {
         const menus = shown('[role="menu"]');
-        if (menus.length > 1) throw new Error('Mehrere Menüs erkannt; Zuordnung nicht eindeutig.');
+        if (menus.length > 1) throw new Error(t('errorMultipleMenus'));
         return menus[0];
-      }, 'Das Chat-Menü wurde nicht erkannt.', signal);
+      }, t('errorMenuMissing'), signal);
       // Gemini owns menu state on gem-icon-button, while its inner native
       // button receives the click. Conflicting associations must still stop.
       await waitFor(() => {
         guard.verify();assertBoundTarget(target, item);
         const menus = shown('[role="menu"]');
-        if (menus.length !== 1 || menus[0] !== menu) throw new Error('Das geöffnete Chat-Menü hat sich während der Zuordnung verändert.');
+        if (menus.length !== 1 || menus[0] !== menu) throw new Error(t('errorMenuChanged'));
         const associations = new Set([target.menu, target.controller].map(node => normal(node.getAttribute('aria-controls'))).filter(Boolean));
         // Angular can render the menu before attaching aria-controls to its
         // trigger. Wait only for absent evidence; conflicting evidence fails.
         if (!associations.size) return false;
         const controls = [...associations][0];
         if (associations.size !== 1 || (menu.id !== controls && !document.getElementById(controls)?.contains(menu))) {
-          throw new Error('Das geöffnete Menü gehört nicht eindeutig zum ausgewählten Chat.');
+          throw new Error(t('errorMenuUnbound'));
         }
         return true;
-      }, 'Das geöffnete Menü gehört nicht eindeutig zum ausgewählten Chat.', signal);
+      }, t('errorMenuUnbound'), signal);
       const remove = deleteControls(menu, '[role="menuitem"]');
-      if (remove.length !== 1) throw new Error('Der Menüpunkt „Löschen“ wurde nicht eindeutig erkannt. Die Oberfläche stellt keine eindeutige Löschaktion bereit.');
+      if (remove.length !== 1) throw new Error(t('errorDeleteAction'));
       const menuIdentity = Provider.deleteMenuIdentity(remove[0]);
-      if (menuIdentity !== undefined && menuIdentity !== item.id) throw new Error('Der Menüpunkt zum Löschen bestätigt nicht die ausgewählte Chat-ID.');
-      if (remove[0].disabled || remove[0].getAttribute('aria-disabled') === 'true') throw new Error('Der Menüpunkt zum Löschen ist deaktiviert.');
+      if (menuIdentity !== undefined && menuIdentity !== item.id) throw new Error(t('errorMenuIdentity'));
+      if (remove[0].disabled || remove[0].getAttribute('aria-disabled') === 'true') throw new Error(t('errorDeleteDisabled'));
       check(signal);
       guard.verify();
       assertBoundTarget(target, item);
@@ -391,20 +415,20 @@
       const directTask = Provider.isTask(item.id), rootParent = target.root.parentElement;
       committed = directTask;
       remove[0].click();
-      dialog = await waitFor(() => {
+      dialog = Provider.key === 'claude' ? await settledClaudeDialog(item, target, signal, guard) : await waitFor(() => {
         guard.verify();
         const dialogs = shown(dialogSelector);
-        if (dialogs.length > 1) throw new Error('Mehrere Bestätigungsdialoge erkannt.');
+        if (dialogs.length > 1) throw new Error(t('errorMultipleDialogs'));
         return dialogs[0] || (directTask && !listedIds().has(item.id) ? {removed:true} : null);
-      }, 'Der Löschdialog oder das Ergebnis wurde nicht erkannt. Bitte den Verlauf prüfen, bevor du erneut startest.', directTask ? null : signal);
+      }, t('errorResultMissing'), directTask ? null : signal);
       if (dialog.removed) dialog = null;
       else {
         committed = false;
         await waitFor(() => {
           guard.verify();assertBoundTarget(target, item);
           const dialogs = shown(dialogSelector);
-          if (dialogs.length !== 1 || dialogs[0] !== dialog) throw new Error('Der Bestätigungsdialog hat sich während des Aufbaus verändert.');
-          if (dialogIdentityConflict(dialog, item)) throw new Error(`Der Löschdialog bestätigt nicht eindeutig „${item.title}“. Es wird nicht weitergelöscht.`);
+          if (dialogs.length !== 1 || dialogs[0] !== dialog) throw new Error(t('errorDialogChanged'));
+          if (dialogIdentityConflict(dialog, item)) throw new Error(t('errorDialogIdentity', item.title));
           const controls = shown('button, [role="button"]', dialog);
           if (!shown('h1, h2, h3, [role="heading"]', dialog).length || controls.length < 2) return false;
           // Material renders its shell before content, animation and jslog
@@ -413,17 +437,19 @@
           if (Provider.key === 'gemini' && dialog.matches('mat-dialog-container') &&
               !controls.some(control => Provider.confirmationIdentity(control) !== undefined || semanticDelete(control, true))) return false;
           return true;
-        }, 'Der Löschdialog wurde nicht vollständig geladen. Bitte den Verlauf prüfen.', signal);
+        }, t('errorDialogIncomplete'), signal);
         if (!validDialog(dialog, item, target)) {
-          throw new Error(`Der Löschdialog bestätigt nicht eindeutig „${item.title}“. Es wird nicht weitergelöscht.`);
+          throw new Error(t('errorDialogIdentity', item.title));
         }
         const buttons = deleteControls(dialog, 'button, [role="button"]', true);
         if (buttons.length !== 1 || buttons[0].disabled || buttons[0].getAttribute('aria-disabled') === 'true') {
-          throw new Error('Die Löschbestätigung ist nicht eindeutig verfügbar.');
+          throw new Error(t('errorConfirmation'));
         }
         check(signal);
         guard.verify();
         assertBoundTarget(target, item);
+        const currentDialogs = shown(dialogSelector);
+        if (currentDialogs.length !== 1 || currentDialogs[0] !== dialog) throw new Error(t('errorDialogChanged'));
         committed = true;
         buttons[0].click();
       }
@@ -436,7 +462,7 @@
             target.root.parentElement !== rootParent || !visible(target.root)) { goneSince = 0; return false; }
         if (!goneSince) goneSince = Date.now();
         return Date.now() - goneSince >= 1200;
-      }, 'Das Ergebnis der letzten Löschung ist unklar. Bitte Seite neu laden und den Verlauf prüfen; kein automatischer Wiederholungsversuch.', null, 10000);
+      }, t('errorResultUnclear'), null, 10000);
       guard.record(item.id);
     } catch (error) {
       if (!committed) await dismiss(dialog, target.menu, target.controller);

@@ -2,10 +2,10 @@ const {test,before,after}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');const path=require('node:path');const os=require('node:os');
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
-const {modernChatGPT,metadataGemini,reportedChatGPT,reportedGemini,liveChatGPTDialog,liveGemini,codexTasks,stagedGeminiDialog}=require('./compat-helpers.cjs');
+const {modernChatGPT,metadataGemini,reportedChatGPT,reportedGemini,liveChatGPTDialog,liveGemini,codexTasks,stagedGeminiDialog,overlappingClaudeDialogs}=require('./compat-helpers.cjs');
 const extension=path.resolve(__dirname,'..');const fixture=fs.readFileSync(path.join(__dirname,'fixture.html'),'utf8');
 let context,profile;
-before(async()=>{profile=fs.mkdtempSync(path.join(os.tmpdir(),'chat-cleaner-test-'));context=await chromium.launchPersistentContext(profile,{channel:'chromium',executablePath:process.env.CHROMIUM_PATH,headless:true,args:[`--disable-extensions-except=${extension}`,`--load-extension=${extension}`]});await context.route('**/*',r=>['chatgpt.com','claude.ai','gemini.google.com'].includes(new URL(r.request().url()).hostname)?r.fulfill({contentType:'text/html',headers:r.request().url().includes('tt=1')?{'Content-Security-Policy':"require-trusted-types-for 'script'"}:{},body:fixture}):r.abort());});
+before(async()=>{profile=fs.mkdtempSync(path.join(os.tmpdir(),'chat-cleaner-test-'));context=await chromium.launchPersistentContext(profile,{channel:'chromium',executablePath:process.env.CHROMIUM_PATH,headless:true,locale:'de-DE',env:{...process.env,LANG:'de_DE.UTF-8',LANGUAGE:'de_DE'},args:['--lang=de-DE',`--disable-extensions-except=${extension}`,`--load-extension=${extension}`]});await context.route('**/*',r=>['chatgpt.com','claude.ai','gemini.google.com'].includes(new URL(r.request().url()).hostname)?r.fulfill({contentType:'text/html',headers:r.request().url().includes('tt=1')?{'Content-Security-Policy':"require-trusted-types-for 'script'"}:{},body:fixture}):r.abort());});
 after(async()=>{await context?.close();if(profile)fs.rmSync(profile,{recursive:true,force:true});});
 async function pageFor(t,url='https://chatgpt.com/'){const p=await context.newPage();p.setDefaultTimeout(2500);t.after(()=>p.close());await p.goto(url);await p.getByRole('button',{name:'Chats aufräumen',exact:true}).click();return p;}
 const box=(p,title)=>p.getByRole('checkbox',{name:`Chat auswählen: ${title}`,exact:true});
@@ -347,6 +347,38 @@ test('compat: Claude exact reported session dialog succeeds',async t=>{
  const p=await pageFor(t,'https://claude.ai/');await p.evaluate(()=>Object.assign(options,{english:true,heading:'Delete session?',plainDialog:'This session will be permanently deleted. This can’t be undone.',noConfirmMarker:true}));
  await box(p,'Alte Notizen').check();await confirm(p);await status(p,/Angehalten|Fertig/);
  assert.deepEqual(await p.evaluate(()=>window.deleted),['00000000-0000-4000-8000-000000000002']);
+});
+test('Claude dialog transition: transient overlap settles before confirming the second selected chat',async t=>{
+ const p=await pageFor(t,'https://claude.ai/');await overlappingClaudeDialogs(p);
+ await box(p,'Urlaub planen').check();await box(p,'Alte Notizen').check();await confirm(p);await status(p,/Angehalten|Fertig/);
+ assert.deepEqual(await p.evaluate(()=>window.deleted),['00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000002']);
+ assert.deepEqual(await p.evaluate(()=>window.nativeConfirmations.map(({count,phase})=>({count,phase}))),[{count:1,phase:'settled'},{count:1,phase:'settled'}]);
+ assert.equal(await p.locator('#rows .row').count(),1);
+});
+test('Claude dialog transition: persistent ambiguity never confirms either dialog or advances the queue',async t=>{
+ const p=await pageFor(t,'https://claude.ai/');await overlappingClaudeDialogs(p,{overlapAt:1,mode:'persistent'});
+ await box(p,'Urlaub planen').check();await box(p,'Alte Notizen').check();await confirm(p);await status(p,/Angehalten/);
+ assert.deepEqual(await p.evaluate(()=>window.deleted),[]);assert.deepEqual(await p.evaluate(()=>window.nativeConfirmations),[]);
+ assert.equal(await p.evaluate(()=>window.nativeDialogOpens),1);assert.equal(await p.locator('#rows .row').count(),3);
+});
+test('Claude dialog transition: Stop during overlap prevents native confirmation',async t=>{
+ const p=await pageFor(t,'https://claude.ai/');await overlappingClaudeDialogs(p,{overlapAt:1,mode:'persistent'});
+ await box(p,'Alte Notizen').check();await confirm(p);
+ await p.waitForFunction(()=>document.querySelectorAll('[role="alertdialog"]').length===2);
+ await p.getByRole('button',{name:'Anhalten',exact:true}).click();await status(p,/Angehalten/);
+ assert.deepEqual(await p.evaluate(()=>window.deleted),[]);assert.deepEqual(await p.evaluate(()=>window.nativeConfirmations),[]);
+});
+for(const mode of ['changed-target','foreign-id'])test(`Claude dialog transition: ${mode} stops before any confirmation`,async t=>{
+ const p=await pageFor(t,'https://claude.ai/');await overlappingClaudeDialogs(p,{overlapAt:1,mode});
+ await box(p,'Alte Notizen').check();await confirm(p);await status(p,/Angehalten/);
+ assert.deepEqual(await p.evaluate(()=>window.deleted),[]);assert.deepEqual(await p.evaluate(()=>window.nativeConfirmations),[]);
+ assert.equal(await p.locator('#rows .row').count(),3);
+});
+test('Claude dialog transition: brief uniqueness and replacement do not bypass settling',async t=>{
+ const p=await pageFor(t,'https://claude.ai/');await overlappingClaudeDialogs(p,{overlapAt:1,mode:'unstable'});
+ await box(p,'Alte Notizen').check();await confirm(p);await status(p,/Angehalten|Fertig/);
+ assert.deepEqual(await p.evaluate(()=>window.deleted),['00000000-0000-4000-8000-000000000002']);
+ assert.deepEqual(await p.evaluate(()=>window.nativeConfirmations.map(({count,phase})=>({count,phase}))),[{count:1,phase:'settled'}]);
 });
 for(const [language,menuName,heading,plainDialog,cancelName] of [
  ['French','Supprimer','Supprimer la session ?','Cette session sera définitivement supprimée. Cette action est irréversible.','Annuler'],

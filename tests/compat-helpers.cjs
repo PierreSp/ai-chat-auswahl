@@ -186,4 +186,52 @@ async function stagedGeminiDialog(page, mode, settings={}) {
   }
  },{mode,settings});
 }
-module.exports={modernChatGPT,metadataGemini,reportedChatGPT,reportedGemini,liveChatGPTDialog,liveGemini,codexTasks,stagedGeminiDialog};
+// Claude can briefly render two native confirmation shells during a transition.
+// Keep both actionable so choosing either while ambiguous is observable.
+async function overlappingClaudeDialogs(page, settings={}) {
+ await page.evaluate(settings=>{
+  window.nativeConfirmations=[];window.nativeDialogOpens=0;
+  for(const more of document.querySelectorAll('#rows .row button')) {
+   const open=more.onclick;
+   more.onclick=event=>{
+    open(event);
+    const row=more.closest('.row'),id=row.dataset.id;
+    const menu=document.querySelector('[role="menu"]');
+    menu.querySelector('[role="menuitem"]').onclick=()=>{
+     menu.remove();more.setAttribute('aria-expanded','false');
+     const overlap=++window.nativeDialogOpens===(settings.overlapAt??2);
+     let phase=overlap?'overlap':'settled';
+     const makeDialog=foreign=>{
+      const dialog=document.createElement('div');
+      dialog.setAttribute('role','alertdialog');dialog.setAttribute('data-cds','ConfirmationDialog');dialog.setAttribute('data-open','');
+      dialog.style.cssText=`position:fixed;left:${foreign?650:300}px;top:100px;width:300px;padding:20px;background:white`;
+      const heading=document.createElement('h2');heading.textContent='Delete session?';
+      const description=document.createElement('p');description.textContent='This session will be permanently deleted. This can’t be undone.';
+      const cancel=document.createElement('button');cancel.textContent='Cancel';cancel.onclick=()=>dialog.remove();
+      const confirm=document.createElement('button');confirm.textContent='Delete';confirm.className='bg-danger-000';
+      confirm.onclick=()=>{
+       const count=[...document.querySelectorAll('[role="alertdialog"]')].filter(el=>el.isConnected&&el.getClientRects().length&&getComputedStyle(el).visibility!=='hidden').length;
+       nativeConfirmations.push({id:foreign?'foreign-confirmation':id,count,phase});
+       deleted.push(foreign?'foreign-confirmation':id);if(!foreign)row.remove();dialog.remove();
+      };
+      dialog.append(heading,description,cancel,confirm);return dialog;
+     };
+     let primary=makeDialog(false);document.body.append(primary);
+     if(!overlap)return;
+     const duplicate=makeDialog(true);
+     if(settings.mode==='foreign-id')duplicate.setAttribute('data-conversation-id','00000000-0000-4000-8000-000000000099');
+     document.body.append(duplicate);
+     if(settings.mode==='persistent')return;
+     if(settings.mode==='changed-target')setTimeout(()=>{row.querySelector('a span').textContent='Changed during transition';},150);
+     if(settings.mode==='unstable'){
+      setTimeout(()=>duplicate.remove(),150);
+      setTimeout(()=>document.body.append(duplicate),250);
+      setTimeout(()=>{const replacement=makeDialog(false);primary.replaceWith(replacement);primary=replacement;},350);
+     }
+     setTimeout(()=>{phase='settled';duplicate.remove();},settings.delay??550);
+    };
+   };
+  }
+ },settings);
+}
+module.exports={modernChatGPT,metadataGemini,reportedChatGPT,reportedGemini,liveChatGPTDialog,liveGemini,codexTasks,stagedGeminiDialog,overlappingClaudeDialogs};

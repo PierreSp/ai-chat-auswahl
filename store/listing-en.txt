@@ -1,0 +1,28 @@
+NAME
+ChatSweep – Bulk delete chats
+
+SHORT DESCRIPTION
+Less clutter in ChatGPT, Claude and Gemini. Select chats, review your choices and delete them together. Local, with no tracking.
+
+DETAILED DESCRIPTION
+Fewer chats. More clarity.
+
+Clear out old conversations without opening every chat menu one by one. ChatSweep adds checkboxes to your history in ChatGPT, Claude and Gemini, lets you review your selection, and deletes the chats you confirm.
+
+SELECT WITH CONFIDENCE
+Choose individual chats, Shift-click a range, or select all currently loaded entries. Load more history when you need it. New entries stay unselected, and Codex tasks in ChatGPT's history are clearly marked.
+
+REVIEW BEFORE YOU DELETE
+See the complete selection before anything is removed. Take individual chats out of the review, confirm your choices, and follow the progress. Stop the remaining operations at any time. If ChatSweep cannot reliably match a chat, menu or confirmation, it stops.
+
+LOCAL BY DESIGN
+Chat titles and controls are processed in the open tab. No analytics, developer servers, API keys or diagnostic exports. The supported websites make their normal requests when their controls are activated.
+
+English and German interfaces are included. ChatSweep follows Chrome's language and uses English for other languages.
+
+BEFORE YOU START
+Deletion is permanent and affects your account. Keep the tab open until the operation finishes; do not reload or navigate away. A deletion already confirmed may finish after you press Stop. On Gemini, deletion also removes associated activity and content created in that chat.
+
+ChatSweep works with loaded history. Closed projects, archives and search results are not searched. Website changes or different native dialog variants may require an update. This is a public beta.
+
+Free software under GPL-3.0. Independent software, not an official product of OpenAI, Anthropic or Google.

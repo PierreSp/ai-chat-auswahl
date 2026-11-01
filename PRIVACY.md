@@ -1,30 +1,31 @@
-# Datenschutz
+# Privacy policy
 
-Stand: 1. November 2026, Version 1.3.0.
+Updated: November 1, 2026. Applies to ChatSweep 1.4.0. [Deutsch](PRIVACY.de.md).
 
-Entwickler: Pierre Springer. Projekt und Kontaktmöglichkeit:
+Developer: Pierre Springer. Project and contact:
 [PierreSp/ai-chat-auswahl](https://github.com/PierreSp/ai-chat-auswahl).
 
-AI Chat-Auswahl arbeitet lokal in den geöffneten Webseiten von `chatgpt.com`,
-`claude.ai` und `gemini.google.com`. Die Erweiterung liest Chat-Titel, Chat-IDs,
-Links und Bedienelemente aus der Seitenstruktur, um die Auswahl darzustellen
-und die vom Benutzer bestätigten Löschaktionen auszuführen.
-Auch Texte nativer Menüs, Bestätigungsdialoge und Fehlermeldungen werden lokal
-für diese Zuordnung und die Ergebnisprüfung verwendet. Chat-Titel können
-persönliche Angaben enthalten. Die Daten werden ausschließlich für diese
-Funktion verwendet, nicht für Werbung, Profilbildung oder andere Zwecke.
+ChatSweep runs locally on the open `chatgpt.com`, `claude.ai` and
+`gemini.google.com` websites. It reads chat titles, identifiers, links and interface
+controls from the page to display selections and carry out deletions expressly
+confirmed by the user. Native menu, confirmation-dialog and error text is also
+used locally to match the requested action and check its result. Titles can
+contain personal information.
 
-- Keine eigenen Netzwerkanfragen, Analyse- oder Werbedienste.
-- Kein Zugriff auf Cookies und keine API-Schlüssel oder Zugriffstokens.
-- Keine dauerhafte Speicherung von Auswahl, Chat-Daten oder Fortschritt.
-  Diese Daten bleiben im Arbeitsspeicher des jeweiligen Tabs und gehen beim
-  Schließen oder Neuladen verloren.
-- Keine Diagnoseberichte oder automatische Übermittlung von Fehlermeldungen.
+This information is used only for selecting, reviewing and deleting chats. It is
+not used for advertising, profiling or unrelated purposes.
 
-Die Websites selbst führen nach den ausgelösten Klicks ihre üblichen Anfragen
-aus. Die Löschung wirkt auf das angemeldete Konto. Für die Verarbeitung durch
-ChatGPT, Claude und Gemini gelten die Bedingungen der jeweiligen Anbieter.
+- No extension-originated network requests, analytics or advertising services.
+- No access to cookies, API keys or authentication tokens.
+- No persistent storage of chat data, selections or progress. These remain in the
+  tab's memory and disappear when it closes or reloads.
+- No diagnostic reports or automatic transmission of error messages.
+- No sale or transfer of this information to the developer or other third parties.
 
-Wer auf GitHub einen Fehler meldet, veröffentlicht die selbst eingegebenen
-Informationen dort. Bitte private Chat-Titel, Kontodaten und Inhalte aus
-Fehlermeldungen oder Bildern vorher entfernen.
+The providers' websites make their normal requests after the extension activates
+the selected controls. Deletion affects the signed-in account. ChatGPT, Claude
+and Gemini process information under their respective providers' policies.
+
+If you choose to report a problem on GitHub, the information you enter there is
+published by you. Remove private chat titles, account details and message content
+from reports and screenshots before posting.

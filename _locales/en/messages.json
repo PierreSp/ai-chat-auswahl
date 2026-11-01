@@ -1,0 +1,482 @@
+{
+  "extensionName": {
+    "message": "ChatSweep – Bulk delete chats"
+  },
+  "extensionDescription": {
+    "message": "Select, review and bulk delete chats in ChatGPT, Claude and Gemini. Local, free and without tracking."
+  },
+  "actionTitle": {
+    "message": "ChatSweep – Clean up chats"
+  },
+  "uiLanguage": {
+    "message": "en"
+  },
+  "popupTagline": {
+    "message": "Local and free"
+  },
+  "popupIntro": {
+    "message": "Fewer chats. More clarity. Select chats in ChatGPT, Claude or Gemini and review them before deleting them together."
+  },
+  "popupOpen": {
+    "message": "Open selection in this tab"
+  },
+  "popupNote": {
+    "message": "For chatgpt.com, claude.ai and gemini.google.com. No third-party account, no telemetry."
+  },
+  "popupUnavailable": {
+    "message": "Please open ChatGPT, Claude or Gemini in your browser and reload the tab once. Then try again."
+  },
+  "errorNoActiveTab": {
+    "message": "No active tab."
+  },
+  "errorUnavailable": {
+    "message": "Unavailable."
+  },
+  "geminiDeletionNote": {
+    "message": "In Gemini, this also deletes related activity and content created in the chat, such as Canvas documents."
+  },
+  "deletionNote": {
+    "message": "Only the selected chats in your account will be deleted."
+  },
+  "launch": {
+    "message": "Clean up chats"
+  },
+  "panelLabel": {
+    "message": "Chat selection"
+  },
+  "minimizeLabel": {
+    "message": "Minimize selection window"
+  },
+  "minimizeTitle": {
+    "message": "Minimize – keep selection"
+  },
+  "closeLabel": {
+    "message": "Close chat cleanup"
+  },
+  "closeTitle": {
+    "message": "Close and discard selection"
+  },
+  "selectHeading": {
+    "message": "Select chats"
+  },
+  "selectedLabel": {
+    "message": " selected"
+  },
+  "scopeHeading": {
+    "message": "Which chats are included?"
+  },
+  "scopeLoaded": {
+    "message": "Loaded chats outside the screen also get checkboxes. Chats that have not loaded yet appear after scrolling; new entries start unselected."
+  },
+  "scopeCodex": {
+    "message": "Codex tasks in ChatGPT history can also be selected. They are marked as Codex tasks in the deletion preview."
+  },
+  "scopeHidden": {
+    "message": "Open collapsed groups yourself first. Closed projects, archives and search results are not searched. Chats that cannot be identified clearly do not get a checkbox."
+  },
+  "loadMore": {
+    "message": "Load more chats"
+  },
+  "stopLoading": {
+    "message": "Stop loading"
+  },
+  "selectAll": {
+    "message": "Select all loaded chats"
+  },
+  "selectNone": {
+    "message": "Clear selection"
+  },
+  "deleteSelection": {
+    "message": "Delete selection"
+  },
+  "deletionProgress": {
+    "message": "Deletion progress"
+  },
+  "stop": {
+    "message": "Stop"
+  },
+  "busyNote": {
+    "message": "Keep this tab open. Do not reload or navigate to another page until the process has finished. Stopping prevents further deletions. A deletion already confirmed may still finish."
+  },
+  "ready": {
+    "message": "Ready. You review your selection before deleting."
+  },
+  "reviewHeading": {
+    "message": "Permanently delete?"
+  },
+  "reviewKeepTab": {
+    "message": "Keep this tab open while deleting. Do not reload or navigate to another page until the process has finished."
+  },
+  "reviewAgree": {
+    "message": "I have reviewed the selection."
+  },
+  "cancel": {
+    "message": "Cancel"
+  },
+  "rangeHint": {
+    "message": "Select a range: click the first checkbox, then hold Shift and click the checkbox at the other end."
+  },
+  "codexTask": {
+    "message": "Codex task"
+  },
+  "reviewUnavailable": {
+    "message": "Currently not loaded or changed – load it again or remove it."
+  },
+  "remove": {
+    "message": "Remove"
+  },
+  "emptySelection": {
+    "message": "The selection is empty. Choose Cancel to return to the chat list."
+  },
+  "errorStopped": {
+    "message": "Stopped by you."
+  },
+  "checkingResult": {
+    "message": "Checking the result …"
+  },
+  "loadingProgress": {
+    "message": "Scrolling the sidebar. Each pass takes at most 30 seconds."
+  },
+  "loadingStarted": {
+    "message": "Loading. Your selection is kept."
+  },
+  "loadLimit": {
+    "message": "Time or step limit reached. You can load more again."
+  },
+  "loadNoMore": {
+    "message": "No more entries detected for now. Load more again if needed."
+  },
+  "loadingStopped": {
+    "message": "Loading stopped. Your selection is kept."
+  },
+  "loadingStopping": {
+    "message": "Stopping loading …"
+  },
+  "stopping": {
+    "message": "Stopping …"
+  },
+  "reviewWarning": {
+    "message": "These chats will be deleted from your $provider$ account. This cannot be undone.",
+    "placeholders": {
+      "provider": {
+        "content": "$1",
+        "example": "ChatGPT"
+      }
+    }
+  },
+  "loadedCount": {
+    "message": "$count$ loaded chats detected",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "noChats": {
+    "message": "No chats detected yet. Open the $provider$ sidebar and your history. Unrecognized entries will not be deleted.",
+    "placeholders": {
+      "provider": {
+        "content": "$1",
+        "example": "ChatGPT"
+      }
+    }
+  },
+  "unavailableCount": {
+    "message": "$count$ selected chats are currently unavailable or changed. Scroll back or remove them in the preview.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "selectChat": {
+    "message": "Select chat: $title$",
+    "placeholders": {
+      "title": {
+        "content": "$1",
+        "example": "Holiday plans"
+      }
+    }
+  },
+  "chatId": {
+    "message": "Chat ID: $id$",
+    "placeholders": {
+      "id": {
+        "content": "$1",
+        "example": "00000000-0000-4000-8000-000000000002"
+      }
+    }
+  },
+  "removeFromSelection": {
+    "message": "Remove from selection: $title$",
+    "placeholders": {
+      "title": {
+        "content": "$1",
+        "example": "Holiday plans"
+      }
+    }
+  },
+  "progressItem": {
+    "message": "$count$ of $total$: $title$",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      },
+      "total": {
+        "content": "$2",
+        "example": "3"
+      },
+      "title": {
+        "content": "$3",
+        "example": "Holiday plans"
+      }
+    }
+  },
+  "deletingProgress": {
+    "message": "$done$ of $total$ removed from history. Deleting …",
+    "placeholders": {
+      "done": {
+        "content": "$1",
+        "example": "1"
+      },
+      "total": {
+        "content": "$2",
+        "example": "3"
+      }
+    }
+  },
+  "deletionDone": {
+    "message": "$done$ of $total$ removed from history. Done.",
+    "placeholders": {
+      "done": {
+        "content": "$1",
+        "example": "1"
+      },
+      "total": {
+        "content": "$2",
+        "example": "3"
+      }
+    }
+  },
+  "deletionStopped": {
+    "message": "Stopped. $done$ of $total$ operations observed. Please check your history.\n$error$",
+    "placeholders": {
+      "done": {
+        "content": "$1",
+        "example": "1"
+      },
+      "total": {
+        "content": "$2",
+        "example": "3"
+      },
+      "error": {
+        "content": "$3",
+        "example": "Stopped by you."
+      }
+    }
+  },
+  "loadingAdded": {
+    "message": "$count$ more chats detected. Loading …",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "launchSelectedOne": {
+    "message": "Open selection: $count$ chat",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "launchSelectedMany": {
+    "message": "Open selection: $count$ chats",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "reviewCountOne": {
+    "message": "$count$ chat in $provider$",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      },
+      "provider": {
+        "content": "$2",
+        "example": "ChatGPT"
+      }
+    }
+  },
+  "reviewCountMany": {
+    "message": "$count$ chats in $provider$",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      },
+      "provider": {
+        "content": "$2",
+        "example": "ChatGPT"
+      }
+    }
+  },
+  "confirmOne": {
+    "message": "Permanently delete $count$ chat",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "confirmMany": {
+    "message": "Permanently delete $count$ chats",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "loadingDone": {
+    "message": "Loading finished: $count$ more chats detected. $detail$ This does not confirm that the entire history is loaded.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      },
+      "detail": {
+        "content": "$2",
+        "example": "You can load more again."
+      }
+    }
+  },
+  "errorScrollList": {
+    "message": "No unambiguous scrollable chat list detected. Open the sidebar and scroll it manually."
+  },
+  "errorListChanged": {
+    "message": "The chat list has changed. Please open it again."
+  },
+  "errorCloseOverlays": {
+    "message": "Please close open menus or dialogs first."
+  },
+  "errorVirtualized": {
+    "message": "The page hides chats while scrolling. Work in smaller groups; your selection is kept."
+  },
+  "errorBoundTarget": {
+    "message": "The selected chat changed during confirmation. Please select it again."
+  },
+  "errorReappeared": {
+    "message": "A chat already processed has reappeared in the history. Please check your history."
+  },
+  "errorCheckHistory": {
+    "message": "Please check your history."
+  },
+  "errorMenuDisabled": {
+    "message": "The chat menu is disabled."
+  },
+  "errorMultipleMenus": {
+    "message": "Multiple menus detected; the association is ambiguous."
+  },
+  "errorMenuMissing": {
+    "message": "The chat menu was not detected."
+  },
+  "errorMenuChanged": {
+    "message": "The open chat menu changed while its association was being checked."
+  },
+  "errorMenuUnbound": {
+    "message": "The open menu cannot be clearly linked to the selected chat."
+  },
+  "errorDeleteAction": {
+    "message": "The Delete menu item could not be clearly identified. The interface does not provide an unambiguous delete action."
+  },
+  "errorMenuIdentity": {
+    "message": "The delete menu item does not confirm the selected chat ID."
+  },
+  "errorDeleteDisabled": {
+    "message": "The delete menu item is disabled."
+  },
+  "errorMultipleDialogs": {
+    "message": "Multiple confirmation dialogs detected."
+  },
+  "errorResultMissing": {
+    "message": "The deletion dialog or result was not detected. Check your history before starting again."
+  },
+  "errorDialogChanged": {
+    "message": "The confirmation dialog changed while it was loading."
+  },
+  "errorDialogIncomplete": {
+    "message": "The deletion dialog did not finish loading. Please check your history."
+  },
+  "errorConfirmation": {
+    "message": "The deletion confirmation is not unambiguously available."
+  },
+  "errorResultUnclear": {
+    "message": "The result of the last deletion is unclear. Reload the page and check your history; no automatic retry will be made."
+  },
+  "errorPreflight": {
+    "message": "The selection is not fully available or has changed: “$title$”. Nothing has been deleted yet. Load the chat back into the sidebar or remove it from the selection.",
+    "placeholders": {
+      "title": {
+        "content": "$1",
+        "example": "Holiday plans"
+      }
+    }
+  },
+  "errorTargetMissing": {
+    "message": "“$title$” is no longer in the loaded sidebar. Please select it again.",
+    "placeholders": {
+      "title": {
+        "content": "$1",
+        "example": "Holiday plans"
+      }
+    }
+  },
+  "errorTitleChanged": {
+    "message": "The title of “$title$” has changed. Please select it again.",
+    "placeholders": {
+      "title": {
+        "content": "$1",
+        "example": "Holiday plans"
+      }
+    }
+  },
+  "errorProviderAlert": {
+    "message": "$provider$ reported a notice or error. Please check your history.",
+    "placeholders": {
+      "provider": {
+        "content": "$1",
+        "example": "ChatGPT"
+      }
+    }
+  },
+  "errorProviderOverlays": {
+    "message": "Please close open $provider$ dialogs and menus first.",
+    "placeholders": {
+      "provider": {
+        "content": "$1",
+        "example": "ChatGPT"
+      }
+    }
+  },
+  "errorDialogIdentity": {
+    "message": "The deletion dialog does not clearly confirm “$title$”. No further chats will be deleted.",
+    "placeholders": {
+      "title": {
+        "content": "$1",
+        "example": "Holiday plans"
+      }
+    }
+  }
+}

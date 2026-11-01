@@ -1,114 +1,127 @@
-# Chrome Web Store: Vorbereitung
+# Chrome Web Store: Einreichung vorbereiten
 
-Stand: 1. November 2026. Die GitHub-Beta und eine Store-Veröffentlichung sind
-getrennte Veröffentlichungen. Die Erweiterung wurde noch nicht im Store eingereicht.
+Stand: 1. November 2026. **ChatSweep 1.4.0** ist für Englisch und Deutsch
+vorbereitet. Eine Store-Einreichung wurde noch nicht vorgenommen.
 
-## Vorbereitete Angaben
+## Fertige Materialien
 
-- Name: **AI Chat-Auswahl**
-- Sprache: **Deutsch**
-- Kategorie: die passende Produktivitäts-/Werkzeugkategorie im aktuellen Dashboard.
+- Englischer Name: **ChatSweep – Bulk delete chats**
+- Deutscher Name: **ChatSweep – Chats gesammelt löschen**
+- [Englischer Store-Text](../store/listing-en.txt) und [deutscher Store-Text](../store/listing-de.txt)
+- [Store-Icon, 128 × 128](../store/assets/icon128.png), mit transparentem Rand
+- Kleine Werbekachel, 440 × 280: [Englisch](../store/assets/promo-small-en-440x280.png) / [Deutsch](../store/assets/promo-small-440x280.png)
+- [Echte Screenshots und Upload-Reihenfolge](../store/screenshots/README.md)
+- [Live-Testbericht und Grenzen](../store/live-test-report.md)
+- Upload-Materialien gesammelt: `dist/chatsweep-1.4.0-store-assets.zip`
+- Paket: `dist/chatsweep-1.4.0-webstore.zip`, Manifest direkt an der Archivwurzel
 - Homepage: https://github.com/PierreSp/ai-chat-auswahl
 - Support: https://github.com/PierreSp/ai-chat-auswahl/issues
-- Datenschutz: https://github.com/PierreSp/ai-chat-auswahl/blob/main/PRIVACY.md
+- Privacy policy: https://github.com/PierreSp/ai-chat-auswahl/blob/main/PRIVACY.md
+- Datenschutz: https://github.com/PierreSp/ai-chat-auswahl/blob/main/PRIVACY.de.md
 - Lizenz: **GPL-3.0-only**
-- Upload: `dist/ai-chat-auswahl-1.3.0-webstore.zip`; das Manifest liegt direkt
-  an der Archivwurzel. Das andere ZIP ist für die manuelle Installation gedacht.
 
-## Beschreibung zum Übernehmen
+Die Standardsprache des Manifests ist Englisch. `_locales/en` und `_locales/de`
+enthalten die Übersetzungen; Chrome wählt die passende Sprache. Andere
+Browsersprachen verwenden Englisch. Die Erkennung der nativen Löschdialoge der
+Anbieter ist davon unabhängig und unterstützt bekannte Varianten.
 
-Wähle mehrere Chats bei ChatGPT, Claude und Gemini per Checkbox aus, prüfe die
-Auswahl und lösche sie anschließend Schritt für Schritt.
+## Das Entwicklerkonto: vom Herausgeber zu erledigen
 
-AI Chat-Auswahl ergänzt die Verlaufsseitenleiste der unterstützten Websites:
+1. Im [Developer Dashboard](https://chrome.google.com/webstore/devconsole) mit dem
+   Google-Konto anmelden, das dauerhaft als Herausgeber dienen soll. Die
+   Konto-E-Mail lässt sich später nicht einfach ändern; ein Wechsel benötigt
+   gegebenenfalls eine Übertragung der Erweiterung.
+2. Bei der Registrierung die Entwicklervereinbarung selbst lesen und bestätigen
+   und die dort angezeigte einmalige Registrierungsgebühr bezahlen.
+3. [Bestätigung in zwei Schritten](https://myaccount.google.com/security) für dieses
+   Google-Konto einschalten. Google verlangt sie vor Veröffentlichung oder Updates.
+4. Im Konto einen öffentlichen Herausgebernamen und eine regelmäßig gelesene
+   Kontakt-E-Mail angeben. Die Bestätigungs-E-Mail öffnen und verifizieren.
+5. Den Händler-/Nicht-Händler-Status entsprechend der tatsächlichen Tätigkeit
+   angeben. Kostenlos oder Open Source bedeutet nicht automatisch Nicht-Händler.
+   Die Einordnung hängt davon ab, ob die Veröffentlichung im Rahmen einer
+   gewerblichen/beruflichen Tätigkeit erfolgt. Geforderte Identitäts- oder
+   Adressnachweise selbst direkt bei Google einreichen.
 
-- Einzelne Chats oder Bereiche mit Umschalt auswählen.
-- Geladene Chats gesammelt markieren und weitere Einträge nachladen.
-- Codex-Aufgaben im ChatGPT-Verlauf ebenfalls auswählen.
-- Die vollständige Auswahl vor dem Löschen prüfen und korrigieren.
-- Einen laufenden Vorgang anhalten; bei uneindeutigen Einträgen stoppt die Erweiterung.
+Passwörter, Zahlungsdaten, Ausweiskopien und Bestätigungscodes gehören nicht in
+GitHub, die Erweiterung oder diese Anleitung.
 
-Während des Löschens den Tab geöffnet lassen, nicht neu laden und nicht zu einer
-anderen Seite wechseln. Die Löschung ist endgültig und wirkt auf dein Konto.
-Bei Gemini umfasst sie auch zugehörige Aktivitäten und im Chat erzeugte Inhalte.
+## Eintrag anlegen
 
-Die Erweiterung verarbeitet Chat-Titel, IDs und Bedienelemente lokal im Tab.
-Keine eigenen Netzwerkanfragen, Telemetrie, Diagnoseexporte oder API-Schlüssel.
-Die Websites führen nach den ausgelösten Klicks ihre üblichen Anfragen aus.
+1. **Add new item** wählen und `chatsweep-1.4.0-webstore.zip` hochladen.
+2. Die englische Beschreibung als Standard eintragen und Deutsch ergänzen.
+3. Die passende Produktivitäts-/Werkzeugkategorie im aktuellen Dashboard wählen.
+4. Icon und Screenshots hochladen; optional die vorbereitete Werbekachel verwenden.
+5. Homepage-, Support- und Datenschutzlinks hinterlegen und ohne Anmeldung prüfen.
+6. Die Datenschutzfelder wie unten ausfüllen und die Testanleitung hinterlegen.
+7. Bei **Submit for review** zunächst die spätere manuelle Veröffentlichung wählen,
+   damit nach der Google-Prüfung noch einmal der fertige Eintrag geprüft werden kann.
 
-Erste öffentliche Beta. Änderungen an den Websites können Anpassungen erfordern.
-Geschlossene Projekte, Archive und Suchergebnisse werden nicht durchsucht.
-Die Oberfläche ist deutsch; nicht jede native Dialogsprache wird unterstützt.
-
-Freie Software unter GPL-3.0. Unabhängiges Hilfsprogramm, kein offizielles Produkt
-von OpenAI, Anthropic oder Google.
+Einreichung und Veröffentlichung sind getrennte Schritte. Dieses Dokument ist
+keine Bestätigung, dass Google die Erweiterung zugelassen hat.
 
 ## Zweck und Berechtigungen
 
-**Einziger Zweck:** Geladene Unterhaltungen in den unterstützten KI-Webdiensten
-auswählen, vorab prüfen und auf ausdrückliche Bestätigung gemeinsam löschen.
+**Single purpose (Englisch):**
 
-**Website-Zugriff:** Content Scripts laufen ausschließlich auf `chatgpt.com`,
-`claude.ai` und `gemini.google.com`. Der Zugriff ist nötig, um Verlaufszeilen
-zu erkennen, Checkboxen einzufügen und die vorhandenen Menüs und Löschdialoge
-zu bedienen. Es gibt keine Cookies-, Storage- oder Alle-Webseiten-Berechtigung.
+> Select, review and bulk delete loaded conversations in supported AI chat websites
+> using their existing interface, only after explicit user confirmation.
 
-**Remote Code:** Nein. Alle ausführbaren Skripte sind im Erweiterungspaket enthalten.
+**Website access justification (Englisch):**
 
-**Datenangaben:** Nicht pauschal „keine Nutzerdaten“ angeben. Auch die lokale
-Verarbeitung muss offengelegt werden. Websiteinhalte wie Chat-Titel, IDs, Links,
-Menü-/Dialogtexte und Fehlermeldungen werden ausschließlich für den genannten
-Zweck im Tab verarbeitet. Die passenden Kategorien im aktuellen Dashboard anhand
-dieser Angaben prüfen; keine Übertragung an Entwickler oder Analysedienste.
-Die Limited-Use-Bestätigungen müssen zur tatsächlichen Verarbeitung passen.
+> Content scripts run only on chatgpt.com, claude.ai and gemini.google.com. Access
+> is required to identify chat history entries, insert selection checkboxes, and
+> operate the existing menus and confirmation dialogs for the chats the user has
+> selected and reviewed. ChatSweep makes no network requests of its own and does
+> not access cookies, authentication tokens or browser history.
 
-## Vor der Einreichung offen
+**Remote code:** Nein. Alle ausführbaren Skripte sind im Paket enthalten.
 
-- Entwicklerkonto registrieren bzw. prüfen; Google verlangt eine einmalige
-  Registrierungsgebühr. Veröffentlichungsname und Kontakt-E-Mail festlegen und
-  die E-Mail verifizieren. Kontodaten nicht aus privaten Browserdaten übernehmen.
-- Store-Icon mit dem empfohlenen transparenten Rand vorbereiten: 128 × 128 Pixel,
-  bei quadratischem Motiv ungefähr 96 × 96 Pixel Motivfläche. Das aktuelle
-  Erweiterungsicon füllt fast die gesamte Fläche und sollte dafür angepasst werden.
-- Mindestens einen Screenshot im Format 1280 × 800 Pixel hochladen. Die lokalen
-  Vorschauen zeigen die echte Erweiterungsoberfläche auf einer ausdrücklich
-  gekennzeichneten Testseite. Für den Store echte unterstützte Oberflächen mit
-  ausschließlich künstlichen Testchats aufnehmen; keine privaten Chatlisten.
-- Empfehlenswert: kleine Werbekachel 440 × 280 Pixel. Sie ist laut aktueller
-  Dokumentation optional, ebenso die große Kachel 1400 × 560 Pixel.
-- Vollständige Abläufe mit eigens angelegten Testchats für jeden Anbieter prüfen:
-  Auswahl, Vorschau, erfolgreiche Löschung, Abbruch, Nachladen und Fehlerfall.
-  Automatische Tests und bisherige Benutzerberichte ersetzen diese Matrix nicht.
-- Öffentliche Datenschutz- und Supportlinks ohne Anmeldung öffnen und prüfen.
-- Konto-/Vertriebsangaben und Datenschutzkategorien im aktuellen Dashboard prüfen.
-- Testanleitung für Google hinterlegen. Keine privaten Kontozugangsdaten eintragen.
+**Data usage:** Nicht pauschal „keine Nutzerdaten“ angeben. Auch lokale Verarbeitung
+muss offengelegt werden. Websiteinhalte wie Chat-Titel, IDs, Links, Menü-/Dialogtexte
+und Fehlermeldungen werden ausschließlich zur Auswahl, Zuordnung und Löschung
+lokal im Tab verarbeitet. Die passenden Kategorien im aktuellen Dashboard nach
+diesen Angaben auswählen. Keine Übertragung an Entwickler oder Analysedienste,
+kein Verkauf, keine Werbung oder Profilbildung. Die Limited-Use-Bestätigungen
+müssen mit diesen Tatsachen übereinstimmen.
 
-## Testanleitung für die Store-Prüfung
+## Testanleitung für die Store-Prüfung (Englisch)
 
-1. In einem unterstützten Dienst mit einem eigenen Testkonto anmelden und zwei
-   entbehrliche Chats erstellen. Für Codex optional eine entbehrliche Aufgabe nutzen.
-2. Die Verlaufsseitenleiste und „Chats aufräumen“ öffnen.
-3. Einen Testchat auswählen, „Auswahl löschen“ öffnen und zunächst abbrechen.
-   Es darf nichts gelöscht werden.
-4. Die Auswahl erneut öffnen, prüfen, bestätigen und den Tab geöffnet lassen.
-   Nur der ausgewählte Testchat darf aus dem Verlauf verschwinden.
-5. Für die beiden anderen Dienste wiederholen. Keine echten Nutzerdaten verwenden.
+1. Sign in to ChatGPT, Claude or Gemini using your own test account. Create three
+   disposable chats without personal information. Use normal saved chats.
+2. Open the website's history sidebar and choose **Clean up chats**.
+3. Select two test chats. Choose **Delete selection**, inspect the review, then
+   choose **Cancel**. All three chats must remain.
+4. Review the two test chats again, check **I have reviewed the selection.**, and
+   confirm. Keep the tab open. **Stop** prevents later operations; a deletion
+   already confirmed can still finish.
+5. Review and delete any remaining disposable test chats. Verify the outcome in
+   the native history and after reloading the page.
+6. Repeat for the other supported providers. Never use real user conversations.
 
-## Versionen und Auffindbarkeit
+No extension-specific login or API key is required. The provider accounts are
+needed because ChatSweep operates on their existing signed-in interfaces.
 
-Git-Versionstag und Manifestversion zusammen führen, z. B. `v1.3.0` und `1.3.0`.
-Pro veröffentlichter Version ein Release mit Änderungen und installierbarem ZIP.
+## Bilder und Auffindbarkeit
+
+Mindestens ein Screenshot und ein Store-Icon sind erforderlich. Screenshots:
+1280 × 800 Pixel, höchstens fünf. Das 128er-Icon hat eine Motivbreite von ungefähr
+94 Pixeln und einen transparenten Rand. Die kleine Werbekachel 440 × 280 ist
+optional. Keine privaten Chatlisten oder Kontaktdaten in Store-Bildern verwenden.
+
+Versions-Tag und Manifestversion zusammen führen, z. B. `v1.4.0` und `1.4.0`.
 GitHub-Themen: `chrome-extension`, `chatgpt`, `claude`, `gemini`, `chat-management`.
-Im Store Nutzen und unterstützte Dienste natürlich beschreiben; keine wiederholten
-Keywordlisten oder irreführende Anbieterzugehörigkeit.
+Im Store den Nutzen natürlich beschreiben; keine wiederholten Keywordlisten und
+keine irreführende Anbieterzugehörigkeit.
 
 ## Offizielle Grundlagen
 
-- [Paket und Manifest vorbereiten](https://developer.chrome.com/docs/webstore/prepare)
-- [Store-Eintrag und Bildformate](https://developer.chrome.com/docs/webstore/cws-dashboard-listing)
-- [Bildgestaltung und Icon-Abstände](https://developer.chrome.com/docs/webstore/images)
-- [Datenangaben](https://developer.chrome.com/docs/webstore/cws-dashboard-privacy)
-- [Auch lokale Datenverarbeitung offenlegen](https://developer.chrome.com/docs/webstore/program-policies/user-data-faq)
-- [Registrierung](https://developer.chrome.com/docs/webstore/register/)
+- [Registrierung und einmalige Gebühr](https://developer.chrome.com/docs/webstore/register/)
 - [Entwicklerkonto und Kontakt](https://developer.chrome.com/docs/webstore/set-up-account)
-- [Einreichen und Veröffentlichung steuern](https://developer.chrome.com/docs/webstore/publish)
+- [2-Step Verification](https://developer.chrome.com/docs/webstore/program-policies/two-step-verification)
+- [Trader/Non-Trader](https://developer.chrome.com/docs/webstore/program-policies/trader-disclosure)
+- [Paket und Manifest](https://developer.chrome.com/docs/webstore/prepare)
+- [Store-Eintrag und Bilder](https://developer.chrome.com/docs/webstore/cws-dashboard-listing)
+- [Datenangaben](https://developer.chrome.com/docs/webstore/cws-dashboard-privacy)
+- [Auch lokale Verarbeitung offenlegen](https://developer.chrome.com/docs/webstore/program-policies/user-data-faq)
+- [Einreichung und manuelle Veröffentlichung](https://developer.chrome.com/docs/webstore/publish)
