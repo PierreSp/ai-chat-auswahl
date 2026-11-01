@@ -2,13 +2,26 @@ const {test,before,after}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');const path=require('node:path');const os=require('node:os');
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
-const {modernChatGPT,metadataGemini,reportedChatGPT,reportedGemini,liveChatGPTDialog,liveGemini}=require('./compat-helpers.cjs');
+const {modernChatGPT,metadataGemini,reportedChatGPT,reportedGemini,liveChatGPTDialog,liveGemini,codexTasks,stagedGeminiDialog}=require('./compat-helpers.cjs');
 const extension=path.resolve(__dirname,'..');const fixture=fs.readFileSync(path.join(__dirname,'fixture.html'),'utf8');
 let context,profile;
 before(async()=>{profile=fs.mkdtempSync(path.join(os.tmpdir(),'chat-cleaner-test-'));context=await chromium.launchPersistentContext(profile,{channel:'chromium',executablePath:process.env.CHROMIUM_PATH,headless:true,args:[`--disable-extensions-except=${extension}`,`--load-extension=${extension}`]});await context.route('**/*',r=>['chatgpt.com','claude.ai','gemini.google.com'].includes(new URL(r.request().url()).hostname)?r.fulfill({contentType:'text/html',headers:r.request().url().includes('tt=1')?{'Content-Security-Policy':"require-trusted-types-for 'script'"}:{},body:fixture}):r.abort());});
 after(async()=>{await context?.close();if(profile)fs.rmSync(profile,{recursive:true,force:true});});
 async function pageFor(t,url='https://chatgpt.com/'){const p=await context.newPage();p.setDefaultTimeout(2500);t.after(()=>p.close());await p.goto(url);await p.getByRole('button',{name:'Chats aufräumen',exact:true}).click();return p;}
 const box=(p,title)=>p.getByRole('checkbox',{name:`Chat auswählen: ${title}`,exact:true});
+for(const mode of ['body','animation','metadata'])test(`staged Gemini: waits for ${mode} before confirming the selected ID`,async t=>{
+ const p=await pageFor(t,'https://gemini.google.com/app');await stagedGeminiDialog(p,mode);await box(p,'Alte Notizen').check();
+ await confirm(p);await status(p,/Angehalten|Fertig/);assert.deepEqual(await p.evaluate(()=>window.deleted),['8000000000000002']);
+});
+test('staged Gemini: delayed foreign confirmation metadata is still rejected',async t=>{
+ const p=await pageFor(t,'https://gemini.google.com/app');await stagedGeminiDialog(p,'metadata',{foreignId:'8000000000000099'});await box(p,'Alte Notizen').check();
+ await confirm(p);await status(p,/Angehalten|Fertig/);assert.deepEqual(await p.evaluate(()=>window.deleted),[]);
+});
+test('staged Gemini: cancellation while the native dialog is building prevents confirmation',async t=>{
+ const p=await pageFor(t,'https://gemini.google.com/app');await stagedGeminiDialog(p,'body',{delay:800});await box(p,'Alte Notizen').check();
+ await confirm(p);await p.locator('mat-dialog-container').waitFor({state:'attached'});await p.getByRole('button',{name:'Anhalten',exact:true}).click();await status(p,/Angehalten/);
+ await p.waitForTimeout(900);assert.deepEqual(await p.evaluate(()=>window.deleted),[]);
+});
 for(const [name,settings] of [
  ['current native dialog',{}],
  ['delayed menu binding',{bindingDelay:250}],
@@ -46,27 +59,63 @@ test('live Gemini: changed target while waiting for menu binding never opens the
  await p.evaluate(()=>document.querySelector('[data-id$="0002"]').remove());await status(p,/Angehalten/);
  assert.equal(await p.locator('dialog[data-live-gemini]').count(),0);assert.deepEqual(await p.evaluate(()=>window.deleted),[]);
 });
-test('live ChatGPT scope: explains excluded Codex tasks once per task and preserves chat selection',async t=>{
- const p=await pageFor(t);await reportedChatGPT(p);await box(p,'Alte Notizen').check();
- await p.evaluate(()=>{
-  for(let i=0;i<2;i++){const a=document.createElement('a');a.href='/remote/task_e_00000000000000000000000000000001';a.textContent='Codex-Beispiel';document.querySelector('#rows').append(a);}
-  const foreign=document.createElement('a');foreign.href='https://example.org/remote/task_e_00000000000000000000000000000002';foreign.textContent='Fremder Link';document.querySelector('#rows').append(foreign);
- });
- await p.getByText(/1 Codex-Aufgabe.*keine Checkbox/).waitFor();
- assert.equal(await p.getByRole('checkbox',{name:/Chat auswählen:/}).count(),3);
- assert.equal(await box(p,'Alte Notizen').isChecked(),true);assert.deepEqual(await p.evaluate(()=>window.deleted),[]);
- await p.evaluate(()=>document.querySelectorAll('a[href^="/remote/"]').forEach(a=>a.remove()));
- await p.getByText(/1 Codex-Aufgabe.*keine Checkbox/).waitFor({state:'hidden'});
+for(const onlyTasks of [false,true])test(`Codex: selects tasks once per ID in a ${onlyTasks?'task-only':'mixed'} sidebar`,async t=>{
+ const p=await pageFor(t);await codexTasks(p,{onlyTasks});await box(p,'Codex-Testaufgabe').check();
+ assert.equal(await box(p,'Codex-Testaufgabe').count(),1);
+ assert.equal(await p.getByRole('checkbox',{name:/Chat auswählen:/}).count(),onlyTasks?1:4);
+ await p.getByRole('button',{name:'Auswahl löschen',exact:true}).click();
+ assert.ok((await p.locator('#review-list').textContent()).includes('Codex-Aufgabe'));
+ await p.getByRole('button',{name:'Abbrechen',exact:true}).click();assert.deepEqual(await p.evaluate(()=>window.deleted),[]);
 });
-test('live ChatGPT scope: explains a task-only sidebar without treating tasks as chats',async t=>{
- const p=await pageFor(t);await reportedChatGPT(p);
+for(const direct of [false,true])test(`Codex: only the reviewed task is removed ${direct?'without':'with'} a native dialog`,async t=>{
+ const p=await pageFor(t);await codexTasks(p,{direct});await box(p,'Codex-Testaufgabe').check();
+ await confirm(p);await status(p,/Angehalten|Fertig/);
+ assert.deepEqual(await p.evaluate(()=>window.deleted),['task_e_00000000000000000000000000000001']);
+ assert.equal(await p.locator('#rows .row').count(),3);
+});
+test('Codex: observing a direct deletion also works when the last task leaves the sidebar empty',async t=>{
+ const p=await pageFor(t);await codexTasks(p,{direct:true,onlyTasks:true});await box(p,'Codex-Testaufgabe').check();
+ await confirm(p);await status(p,/Fertig/);assert.deepEqual(await p.evaluate(()=>window.deleted),['task_e_00000000000000000000000000000001']);
+});
+test('Codex: stopping after its direct menu action observes that task and keeps the next chat',async t=>{
+ const p=await pageFor(t);await codexTasks(p,{direct:true});await box(p,'Codex-Testaufgabe').check();await box(p,'Alte Notizen').check();
+ await confirm(p);await p.locator('[data-app-action-sidebar-thread-row]').waitFor({state:'detached'});
+ await p.getByRole('button',{name:'Anhalten',exact:true}).click();await status(p,/Angehalten.*1 von 2/s);
+ assert.deepEqual(await p.evaluate(()=>window.deleted),['task_e_00000000000000000000000000000001']);
+});
+for(const mutation of ['wrong-id','wrong-kind','foreign-link','different-hidden-link'])test(`Codex: rejects conflicting row evidence: ${mutation}`,async t=>{
+ const p=await pageFor(t);await codexTasks(p);await box(p,'Codex-Testaufgabe').waitFor();
+ await p.evaluate(mutation=>{
+  const row=document.querySelector('[data-app-action-sidebar-thread-row]');
+  if(mutation==='wrong-id')row.setAttribute('data-app-action-sidebar-thread-id','remote:task_e_00000000000000000000000000000099');
+  if(mutation==='wrong-kind')row.setAttribute('data-app-action-sidebar-thread-kind','chat');
+  if(mutation==='foreign-link')row.querySelector('a').href='https://example.org/remote/task_e_00000000000000000000000000000001';
+  if(mutation==='different-hidden-link')row.querySelector('a[aria-hidden]').href='/remote/task_e_00000000000000000000000000000099';
+ },mutation);
+ await box(p,'Codex-Testaufgabe').waitFor({state:'detached'});assert.deepEqual(await p.evaluate(()=>window.deleted),[]);
+});
+test('Codex: a generic sidebar wrapper cannot bypass conflicting native task evidence',async t=>{
+ const p=await pageFor(t);await codexTasks(p);await box(p,'Codex-Testaufgabe').waitFor();
  await p.evaluate(()=>{
-  const rows=document.querySelector('#rows');rows.replaceChildren();
-  const a=document.createElement('a');a.href='/remote/task_e_00000000000000000000000000000001';a.textContent='Codex-Beispiel';rows.append(a);
+  const row=document.querySelector('[data-app-action-sidebar-thread-row]'),wrapper=document.createElement('div');
+  wrapper.setAttribute('data-sidebar-item','true');row.replaceWith(wrapper);wrapper.append(row);
+  row.setAttribute('data-app-action-sidebar-thread-kind','chat');
  });
- await p.getByText(/1 Codex-Aufgabe.*keine Checkbox/).waitFor();
- assert.equal(await p.getByRole('checkbox',{name:/Chat auswählen:/}).count(),0);
- assert.equal(await p.getByRole('button',{name:'Auswahl löschen',exact:true}).isEnabled(),false);
+ await box(p,'Codex-Testaufgabe').waitFor({state:'detached'});assert.deepEqual(await p.evaluate(()=>window.deleted),[]);
+});
+test('Codex: missing task menu never borrows another rows menu from an outer wrapper',async t=>{
+ const p=await pageFor(t);await codexTasks(p);await box(p,'Codex-Testaufgabe').check();
+ await p.evaluate(()=>{
+  const row=document.querySelector('[data-app-action-sidebar-thread-row]'),wrapper=document.createElement('div');
+  row.querySelector('button').remove();row.replaceWith(wrapper);wrapper.append(row,document.querySelector('[data-id$="0002"] button'));
+ });
+ await box(p,'Codex-Testaufgabe').waitFor({state:'detached'});
+ await confirm(p);await status(p,/Angehalten/);assert.deepEqual(await p.evaluate(()=>window.deleted),[]);
+});
+test('Codex: a normal-chat link cannot bypass the task ID of its native remote row',async t=>{
+ const p=await pageFor(t);await codexTasks(p);await box(p,'Codex-Testaufgabe').waitFor();
+ await p.evaluate(()=>document.querySelector('[data-app-action-sidebar-thread-row] a').href='/c/00000000-0000-4000-8000-000000000099');
+ await box(p,'Codex-Testaufgabe').waitFor({state:'detached'});assert.deepEqual(await p.evaluate(()=>window.deleted),[]);
 });
 async function confirm(p){await p.getByRole('button',{name:'Auswahl löschen',exact:true}).click();await p.getByRole('checkbox',{name:'Ich habe die Auswahl geprüft.'}).check();await p.getByRole('button',{name:/^\d+ Chats? endgültig löschen$/}).click();}
 async function status(p,re){await p.getByRole('status').filter({hasText:re}).waitFor({timeout:15000});}

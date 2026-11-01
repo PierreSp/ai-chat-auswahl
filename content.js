@@ -37,10 +37,10 @@
       el('h2',{text:'Chats auswählen'}),
       el('div',{id:'stats'},[el('span',{id:'number',text:'0'}),' ausgewählt',el('p',{id:'loaded',class:'muted'})]),
       el('p',{id:'hint',class:'muted'}),
-      el('p',{id:'unsupported',class:'muted',hidden:true}),
       el('details',{id:'scope'},[
         el('summary',{text:'Welche Chats werden erfasst?'}),
         el('p',{text:'Auch geladene Chats außerhalb des Bildschirms erhalten Checkboxen. Noch nicht geladene Chats erst nach dem Scrollen; neue Einträge bleiben zunächst abgewählt.'}),
+        ...(provider.key === 'chatgpt' ? [el('p',{text:'Codex-Aufgaben im ChatGPT-Verlauf sind ebenfalls auswählbar. In der Löschvorschau sind sie als Codex-Aufgabe gekennzeichnet.'})] : []),
         el('p',{text:'Eingeklappte Gruppen zuerst selbst öffnen. Geschlossene Projekte, Archive und Suchergebnisse werden nicht durchsucht. Nicht eindeutig erkannte Chats erhalten keine Checkbox.'})]),
       button('load-more','Weitere Chats laden','full'),
       el('div',{id:'loading',hidden:true},[
@@ -71,9 +71,6 @@
   function update() {
     $('number').textContent = selected.size;
     $('loaded').textContent = `${chats.length} geladene Chats erkannt`;
-    const excludedWork = Core.excludedWorkCount();
-    $('unsupported').hidden = !excludedWork;
-    $('unsupported').textContent = `${excludedWork} Codex-Aufgabe${excludedWork === 1 ? ' in dieser Liste erhält' : 'n in dieser Liste erhalten'} keine Checkbox. Unterstützt werden normale Chats. Für eine reine Chatansicht im Verlaufsfilter „Chat“ wählen.`;
     $('hint').textContent = chats.length ? 'Chats links ankreuzen. Mit Umschalt + Klick einen Bereich auswählen.' : `Noch keine Chats erkannt. Öffne die ${provider.name}-Seitenleiste und deinen Verlauf. Nicht erkannte Einträge werden nicht gelöscht.`;
     const locked = busy || loading || reviewing;
     $('save-diagnostics').disabled = locked;
@@ -155,7 +152,7 @@
     refreshTimer = setTimeout(() => {refreshTimer = null;refresh();},120);
   }
   const observer = new MutationObserver(scheduleRefresh);
-  observer.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['href','id','data-conversation-id','data-conversation-options-trigger','data-sidebar-item','data-sidebar-keep-open','data-test-id','data-testid','jslog','aria-label','hidden','aria-hidden','open','class','style'],characterData:true});
+  observer.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['href','id','data-conversation-id','data-conversation-options-trigger','data-sidebar-item','data-sidebar-keep-open','data-app-action-sidebar-thread-id','data-app-action-sidebar-thread-kind','data-app-action-sidebar-thread-row','data-test-id','data-testid','jslog','aria-label','hidden','aria-hidden','open','class','style'],characterData:true});
   function open() { if (busy || loading) return;opened=true;$('panel').hidden=false;$('launch').hidden=true;refresh();$('close').focus(); }
   function close() {
     if (busy || loading) return;
@@ -170,6 +167,7 @@
     snapshot.forEach(item=>titleCounts.set(item.title,(titleCounts.get(item.title)||0)+1));
     snapshot.forEach(item=>{
       const title=el('span',{class:'title',text:item.title});
+      if(provider.isTask(item.id)) title.append(el('small',{text:'Codex-Aufgabe'}));
       if(titleCounts.get(item.title)>1) title.append(el('small',{text:`Chat-ID: ${item.id}`}));
       if(available.get(item.id)!==item.title) title.append(el('small',{class:'unavailable',text:'Derzeit nicht geladen oder verändert – erneut laden oder entfernen.'}));
       const remove=button('', 'Entfernen', '', {'aria-label':`Aus Auswahl entfernen: ${item.title}`});

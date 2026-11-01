@@ -1,4 +1,4 @@
-AI CHAT-AUSWAHL — Version 1.2.7
+AI CHAT-AUSWAHL — Version 1.2.8
 Für ChatGPT, Claude und Gemini im Chrome-Browser.
 Kostenlos, lokal installiert, ohne API-Schlüssel oder Tracking.
 
@@ -42,6 +42,21 @@ BEDIENUNG
 Löschen ist endgültig und betrifft das Konto, nicht nur diesen Computer.
 Bei Gemini werden auch zugehörige Gemini-Aktivitäten und im Chat erzeugte Inhalte
 wie Canvas-Dokumente oder -Apps gelöscht. Der Hinweis steht auch in der Vorschau.
+
+VERSION 1.2.8: CODEX-AUFGABEN UND GEMINIS DIALOGAUFBAU
+- Codex-Aufgaben im ChatGPT-Verlauf erhalten jetzt ebenfalls Checkboxen.
+  Native Aufgaben-ID, Link und Zeilentyp müssen übereinstimmen. Auch reine
+  Aufgabenlisten werden unterstützt; doppelte Links erzeugen keine zweite Box.
+- In der Löschvorschau steht bei diesen Einträgen „Codex-Aufgabe“. Ihr Menü
+  muss innerhalb derselben geprüften Aufgabenzeile liegen. Nach einer Aktion
+  wird entweder der native Dialog geprüft oder das Verschwinden der Aufgaben-ID
+  beobachtet. Unklare Ergebnisse lösen keine automatische Wiederholung aus.
+- Gemini: Die native Dialoghülle kann vor Inhalt, Animation und Metadaten
+  erscheinen. Die vorschnelle Ablehnung wurde mit der vollständigen Struktur
+  reproduziert. Die Prüfung wartet jetzt begrenzt auf sichtbare Kontrollen und
+  Metadaten. Abbruch und widersprüchliche IDs stoppen weiterhin den Vorgang.
+- Live wurden nur Strukturen und Menüs gelesen; echte Chats oder Aufgaben
+  wurden nicht gelöscht. Die vollständigen Löschfälle laufen mit Testdaten.
 
 VERSION 1.2.7: GEMINI-DIALOG UND GEMISCHTER CHATGPT-VERLAUF
 - Gemini wurde live bis zum nativen Bestätigungsdialog geprüft und abgebrochen.

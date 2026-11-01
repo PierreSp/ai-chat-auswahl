@@ -30,7 +30,8 @@
     try {
       const url = new URL(href, location.origin);
       if (url.origin !== location.origin) return null;
-      return url.pathname.match(profile.path)?.[1].toLowerCase() || null;
+      const chat = url.pathname.match(profile.path)?.[1].toLowerCase(), task = workIdentity(href);
+      return chat || (task ? `remote:${task}` : null);
     } catch { return null; }
   }
   function workIdentity(href) {
@@ -51,6 +52,18 @@
   function chatGPTIdentity(entry) {
     if (entry.matches('[data-sidebar-keep-open="true"]')) return null;
     if (entry.matches('a[href]') && !fromURL(entry.getAttribute('href'))) return null;
+    const task = workIdentity(entry.getAttribute('href'));
+    const row = entry.closest('[data-app-action-sidebar-thread-row]');
+    const remoteRow = row && (row.getAttribute('data-app-action-sidebar-thread-kind') === 'remote' ||
+      row.getAttribute('data-app-action-sidebar-thread-id')?.startsWith('remote:'));
+    if (task || remoteRow) {
+      if (!task || !row || row.getAttribute('data-app-action-sidebar-thread-kind') !== 'remote' ||
+          row.getAttribute('data-app-action-sidebar-thread-id') !== `remote:${task}`) return null;
+      const links = [...row.querySelectorAll('a[href]')];
+      if (!links.length || links.some(a => fromURL(a.getAttribute('href')) !== `remote:${task}`)) return null;
+      return `remote:${task}`;
+    }
+    if (!entry.matches('a[href]') && entry.querySelector('[data-app-action-sidebar-thread-kind="remote"], [data-app-action-sidebar-thread-id^="remote:"]')) return null;
     let owner = entry.closest('[data-sidebar-item="true"]') || entry;
     // Older layouts place the options trigger next to the link, in a row.
     if (owner === entry && entry.matches('a[href]') && entry.parentElement) {
@@ -65,7 +78,10 @@
       if (!new RegExp(`^${uuid}$`, 'i').test(id || '')) return null;
       ids.add(id.toLowerCase());
     }
-    return ids.size === 1 ? [...ids][0] : null;
+    const id = ids.size === 1 ? [...ids][0] : null;
+    // Generic wrappers cannot bypass the strict native-row checks above.
+    // Task links inside those wrappers are discovered independently.
+    return id?.startsWith('remote:') ? null : id;
   }
   function metadataIds(node) {
     const log = node.getAttribute('jslog') || '';
@@ -153,7 +169,7 @@
     }));
     return paths.has('/new') && (paths.has('/recents') || paths.has('/chats'));
   }
-  const isScopeRoot = root => isRoot(root) || (profile.key === 'chatgpt' && chatGPTNavigation(root, workIdentity));
+  const isTask = id => profile.key === 'chatgpt' && /^remote:task_e_[0-9a-f]{32}$/.test(id);
   // Text fallback for older dialogs without semantic destructive controls.
   const genericDescriptions = new Set([
     'This will permanently delete this chat. This cannot be undone.',
@@ -168,5 +184,5 @@
     'Möchtest du diesen Chat wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
     'Diese Aktion kann nicht rückgängig gemacht werden.'
   ]);
-  globalThis.ChatCleanerProvider = Object.freeze({...profile, identity, confirmationIdentity, deleteMenuIdentity, title, normal, isRoot, isScopeRoot, workIdentity, genericDescriptions});
+  globalThis.ChatCleanerProvider = Object.freeze({...profile, identity, confirmationIdentity, deleteMenuIdentity, title, normal, isRoot, isTask, genericDescriptions});
 })();

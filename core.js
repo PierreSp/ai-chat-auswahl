@@ -45,6 +45,7 @@
 
   function menuFor(anchor, root, trace = null) {
     const expectedId = chatId(anchor);
+    const taskRow = Provider.isTask(expectedId) ? anchor.closest('[data-app-action-sidebar-thread-row]') : null;
     let row = anchor;
     for (let depth = 0; row && row !== root && depth < 6; depth++, row = row.parentElement) {
       // ChatGPT now wraps the link in three layout elements before its row.
@@ -63,6 +64,9 @@
         return buttons[0];
       }
       if (buttons.length > 1) return null;
+      // A Codex menu action can delete immediately. Never search beyond its
+      // validated native row and borrow a sibling task's destructive control.
+      if (taskRow && row === taskRow) break;
     }
     return null;
   }
@@ -91,17 +95,6 @@
       }
     }
     return [...found.values()];
-  }
-  function excludedWorkCount() {
-    if (Provider.key !== 'chatgpt') return 0;
-    const ids = new Set();
-    const scopeRoots = [...document.querySelectorAll(sidebars)].filter(Provider.isScopeRoot).filter(visible);
-    for (const root of scopeRoots) for (const link of root.querySelectorAll('a[href]')) {
-      if (!visible(link)) continue;
-      const id = Provider.workIdentity(link.getAttribute('href'));
-      if (id) ids.add(id);
-    }
-    return ids.size;
   }
 
   async function loadMore(signal, onProgress) {
@@ -219,12 +212,18 @@
     return regions.some(region => [region, ...region.querySelectorAll('strong, b, span, p')].some(el =>
       !el.closest(controls) && !el.querySelector(controls) && normal(el.textContent) === title));
   }
-  function validDialog(dialog, item) {
+  function dialogIdentityConflict(dialog, item) {
     const explicitId = dialog.getAttribute('data-conversation-id');
-    if (explicitId && explicitId.replace(/^c_/, '').toLowerCase() !== item.id) return false;
+    if (explicitId && explicitId.replace(/^c_/, '').toLowerCase() !== item.id) return true;
     const explicitTitles = [...dialog.querySelectorAll('strong, b, [data-chat-title], [data-testid="conversation-title"]')]
       .filter(el => !el.closest('button, [role="button"], h1, h2, h3, [role="heading"]'));
-    if (explicitTitles.some(el => normal(el.textContent) && normal(el.textContent) !== item.title)) return false;
+    if (explicitTitles.some(el => normal(el.textContent) && normal(el.textContent) !== item.title)) return true;
+    const ids = [...dialog.querySelectorAll('button, [role="button"]')]
+      .map(Provider.confirmationIdentity).filter(id => id !== undefined);
+    return ids.length > 1 || ids.some(id => id !== item.id);
+  }
+  function validDialog(dialog, item) {
+    if (dialogIdentityConflict(dialog, item)) return false;
     const nativeConfirmationControls = [...dialog.querySelectorAll('button, [role="button"]')]
       .filter(control => Provider.confirmationIdentity(control) !== undefined);
     const nativeConfirmationIds = nativeConfirmationControls.map(Provider.confirmationIdentity);
@@ -372,31 +371,55 @@
       check(signal);
       guard.verify();
       assertBoundTarget(target, item);
+      // A Codex task may be removed by its menu action itself. The extension's
+      // reviewed selection already authorized that exact ID. Treat the click
+      // as potentially committed and observe it; never repeat it on timeout.
+      const directTask = Provider.isTask(item.id), rootParent = target.root.parentElement;
+      committed = directTask;
       remove[0].click();
       dialog = await waitFor(() => {
         guard.verify();
         const dialogs = shown(dialogSelector);
         if (dialogs.length > 1) throw new Error('Mehrere Bestätigungsdialoge erkannt.');
-        return dialogs[0];
-      }, 'Der Löschdialog wurde nicht erkannt. Bitte den Verlauf prüfen, bevor du erneut startest.', signal);
-      if (!validDialog(dialog, item)) {
-        throw new Error(`Der Löschdialog bestätigt nicht eindeutig „${item.title}“. Es wird nicht weitergelöscht.`);
+        return dialogs[0] || (directTask && !listedIds().has(item.id) ? {removed:true} : null);
+      }, 'Der Löschdialog oder das Ergebnis wurde nicht erkannt. Bitte den Verlauf prüfen, bevor du erneut startest.', directTask ? null : signal);
+      if (dialog.removed) dialog = null;
+      else {
+        committed = false;
+        await waitFor(() => {
+          guard.verify();assertBoundTarget(target, item);
+          const dialogs = shown(dialogSelector);
+          if (dialogs.length !== 1 || dialogs[0] !== dialog) throw new Error('Der Bestätigungsdialog hat sich während des Aufbaus verändert.');
+          if (dialogIdentityConflict(dialog, item)) throw new Error(`Der Löschdialog bestätigt nicht eindeutig „${item.title}“. Es wird nicht weitergelöscht.`);
+          const controls = shown('button, [role="button"]', dialog);
+          if (!shown('h1, h2, h3, [role="heading"]', dialog).length || controls.length < 2) return false;
+          // Material renders its shell before content, animation and jslog
+          // metadata are ready. Do not turn that temporary absence into either
+          // permission or rejection. Explicit conflicting evidence fails above.
+          if (Provider.key === 'gemini' && dialog.matches('mat-dialog-container') &&
+              !controls.some(control => Provider.confirmationIdentity(control) !== undefined || semanticDelete(control, true))) return false;
+          return true;
+        }, 'Der Löschdialog wurde nicht vollständig geladen. Bitte den Verlauf prüfen.', signal);
+        if (!validDialog(dialog, item)) {
+          throw new Error(`Der Löschdialog bestätigt nicht eindeutig „${item.title}“. Es wird nicht weitergelöscht.`);
+        }
+        const buttons = deleteControls(dialog, 'button, [role="button"]', true);
+        if (buttons.length !== 1 || buttons[0].disabled || buttons[0].getAttribute('aria-disabled') === 'true') {
+          throw new Error('Die Löschbestätigung ist nicht eindeutig verfügbar.');
+        }
+        check(signal);
+        guard.verify();
+        assertBoundTarget(target, item);
+        committed = true;
+        buttons[0].click();
       }
-      const buttons = deleteControls(dialog, 'button, [role="button"]', true);
-      if (buttons.length !== 1 || buttons[0].disabled || buttons[0].getAttribute('aria-disabled') === 'true') {
-        throw new Error('Die Löschbestätigung ist nicht eindeutig verfügbar.');
-      }
-      check(signal);
-      guard.verify();
-      assertBoundTarget(target, item);
-      committed = true;
-      buttons[0].click();
       // After committing, finish observing this one operation even if Stop is pressed.
       let goneSince = 0;
       await waitFor(() => {
         guard.verify();
         const stillListed = listedIds().has(item.id);
-        if (visible(dialog) || stillListed || !roots().some(visible)) { goneSince = 0; return false; }
+        if (visible(dialog) || shown(dialogSelector).length || stillListed || !target.root.isConnected ||
+            target.root.parentElement !== rootParent || !visible(target.root)) { goneSince = 0; return false; }
         if (!goneSince) goneSince = Date.now();
         return Date.now() - goneSince >= 1200;
       }, 'Das Ergebnis der letzten Löschung ist unklar. Bitte Seite neu laden und den Verlauf prüfen; kein automatischer Wiederholungsversuch.', null, 10000);
@@ -407,5 +430,5 @@
     }
   }
 
-  globalThis.ChatCleanerCore = Object.freeze({discover, inspect, excludedWorkCount, loadMore, preflight, deleteChat, createBatchGuard, normal, provider: Provider});
+  globalThis.ChatCleanerCore = Object.freeze({discover, inspect, loadMore, preflight, deleteChat, createBatchGuard, normal, provider: Provider});
 })();

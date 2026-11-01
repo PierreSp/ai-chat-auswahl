@@ -131,4 +131,58 @@ async function liveGemini(page, settings={}) {
   }).observe(document.body,{subtree:true,childList:true});
  },settings);
 }
-module.exports={modernChatGPT,metadataGemini,reportedChatGPT,reportedGemini,liveChatGPTDialog,liveGemini};
+async function codexTasks(page, settings={}) {
+ await reportedChatGPT(page);
+ await page.evaluate(settings=>{
+  if(settings.onlyTasks)document.querySelector('#rows').replaceChildren();
+  const id='task_e_00000000000000000000000000000001';
+  addChat(id,'Codex-Testaufgabe');
+  const row=document.querySelector(`[data-id="${id}"]`),a=row.querySelector('a'),button=row.querySelector('button');
+  row.setAttribute('data-app-action-sidebar-thread-row','');
+  row.setAttribute('data-app-action-sidebar-thread-kind','remote');
+  row.setAttribute('data-app-action-sidebar-thread-id','remote:'+id);
+  a.href='/remote/'+id;
+  const duplicate=a.cloneNode(true);duplicate.textContent='';duplicate.setAttribute('aria-hidden','true');row.append(duplicate);
+  const open=button.onclick;
+  button.onclick=event=>{
+   open(event);
+   const menu=document.querySelector('[role="menu"]'),remove=menu.querySelector('[role="menuitem"]');
+   remove.textContent='Permanently delete';remove.className='text-danger';
+   if(settings.direct)remove.onclick=()=>{deleted.push(id);row.remove();menu.remove();};
+  };
+ },settings);
+}
+async function stagedGeminiDialog(page, mode, settings={}) {
+ await reportedGemini(page);
+ await page.evaluate(({mode,settings})=>{
+  const style=document.createElement('style');style.textContent='mat-dialog-container{display:block;position:fixed;top:150px;left:330px;width:420px;padding:20px;background:white}mat-dialog-content,mat-dialog-actions,gem-button{display:block}message-dialog{display:contents;overflow:hidden}mat-dialog-container button{display:flex;padding:12px}';document.head.append(style);
+  for(const button of document.querySelectorAll('gem-icon-button button')) {
+   const open=button.onclick;
+   button.onclick=event=>{
+    open(event);const menu=document.querySelector('[role="menu"]'),row=button.closest('[data-id]'),id=row.dataset.id;
+    menu.querySelector('[role="menuitem"]').onclick=()=>{
+     menu.remove();button.parentElement.setAttribute('aria-expanded','false');
+     const dialog=document.createElement('mat-dialog-container');dialog.setAttribute('role','dialog');dialog.setAttribute('aria-label','Delete chat');dialog.setAttribute('aria-modal','false');
+     const inner=document.createElement('div'),surface=document.createElement('div'),message=document.createElement('message-dialog');inner.append(surface);surface.append(message);dialog.append(inner);
+     const populate=()=>{
+      const h=document.createElement('h1');h.textContent='Delete chat?';
+      const content=document.createElement('mat-dialog-content'),span=document.createElement('span'),p=document.createElement('p'),help=document.createElement('a');
+      p.textContent='This will delete prompts, responses and feedback from your Gemini Apps activity, plus any content that you created.';
+      help.href='https://support.google.com/gemini?p=deleted_chats';help.textContent='Learn more Opens in a new window';span.append(p);content.append(span,help);
+      const actions=document.createElement('mat-dialog-actions');
+      for(const [name,action] of [['Cancel','305700'],['Delete','186009']]) {
+       const host=document.createElement('gem-button'),control=document.createElement('button'),label=document.createElement('span');label.textContent=name;control.append(label);host.append(control);actions.append(host);
+       const mark=()=>control.setAttribute('jslog',action+';track:generic_click,impression'+(action==='186009'?';BardVeMetadataKey:'+btoa(JSON.stringify([null,null,null,null,null,null,null,['c_'+(settings.foreignId||id),null,0]])):''));
+       if(mode==='metadata')setTimeout(mark,settings.delay||200);else mark();
+       control.onclick=()=>{if(name==='Delete'){deleted.push(id);row.remove();}dialog.remove();};
+      }
+      message.append(h,content,actions);
+     };
+     if(mode==='body'){document.body.append(dialog);setTimeout(populate,settings.delay||200);}
+     else {populate();if(mode==='animation')inner.style.visibility='hidden';document.body.append(dialog);if(mode==='animation')setTimeout(()=>inner.style.visibility='visible',settings.delay||200);}
+    };
+   };
+  }
+ },{mode,settings});
+}
+module.exports={modernChatGPT,metadataGemini,reportedChatGPT,reportedGemini,liveChatGPTDialog,liveGemini,codexTasks,stagedGeminiDialog};
